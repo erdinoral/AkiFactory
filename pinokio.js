@@ -3,7 +3,7 @@ module.exports = {
   version: "8.0",
   title: "AkiFactory",
   description: "Türkçe kısa video stüdyosu: stok video, seslendirme, altyazı ve isteğe bağlı Qwen AI kapak. Windows 10/11 x64.",
-  icon: "assets/icon.png",
+  icon: "assets/akifactory-256.png",
   menu: async (kernel, info) => {
     if (kernel.platform !== "win32") return [{ text: "Bu sürüm Windows 10/11 x64 içindir", href: "README-PINOKIO.md" }];
     for (const [file, label] of [["install.js", "Kuruluyor"], ["update.js", "Güncelleniyor"], ["reset.js", "Ortam sıfırlanıyor"], ["cover-install.js", "AI kapak motoru kuruluyor"]]) {

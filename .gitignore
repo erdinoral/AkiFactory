@@ -1,0 +1,47 @@
+# Python / araclar
+.venv/
+.venv-backup-*/
+logs/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.cache/
+.env
+
+# Eski paketleme ciktilari
+build/
+dist/
+release/
+
+# Calisma zamani (log, pid, port, kurulum isaretleri)
+*.log
+.aki_*
+temp/
+inputs/
+outputs/
+*.bak
+*-bak
+
+# Kullanici verisi: API anahtarlari, ayarlar, videolar, galeri, kuyruk.
+# Repoda yalnizca varsayilan icerik dosyalari kalir.
+data/*
+!data/content_constitution.md
+!data/niche_context/
+!data/turkish_imla_rules.json
+
+# Modeller (kurulumda indirilir / kullanici ekler)
+models/*
+!models/.gitkeep
+hubert_base.pt
+rmvpe.pt
+
+# Altyazi fontu calisirken sistem fontundan kopyalanir (Segoe UI lisansli)
+resource/fonts/AkiFactory-Subtitle.ttf
+# Yerel muzik kutuphanesi ve kullaniciya ait kaynaklar yayinlanmaz.
+resource/songs/*
+!resource/songs/.gitkeep
+
+# Electron
+electron/node_modules/

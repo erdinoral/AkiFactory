@@ -1,0 +1,35 @@
+{
+  "_schema_version": 1,
+  "_aciklama": "replacements: yanlis -> dogru (tam kelime eslesmesi, buyuk/kucuk harf duyarsiz). prompt_hints: sadece LLM'e gosterilir.",
+  "replacements": {
+    "Sumerler": "Sümerler",
+    "Sumer": "Sümer",
+    "Babil Imparatorlugu": "Babil İmparatorluğu",
+    "yanlız": "yalnız",
+    "birşey": "bir şey",
+    "herşey": "her şey",
+    "hiçbirşey": "hiçbir şey",
+    "herkez": "herkes",
+    "Turkiye": "Türkiye",
+    "sehir": "şehir",
+    "guzel": "güzel",
+    "cozulemeyen": "çözülemeyen",
+    "oldugu": "olduğu",
+    "icin": "için",
+    "degil": "değil",
+    "Eski Tas Devri": "Eski Taş Devri",
+    "eski tas devri": "Eski Taş Devri",
+    "eski tas devrinde": "Eski Taş Devri'nde",
+    "ür şehir": "Ur şehri",
+    "ür şehrinde": "Ur şehrinde",
+    "Ur sehir": "Ur şehri"
+  },
+  "prompt_hints": [
+    "Tarih ve gizem: Sümer, Akad, Babil, Asur, Mezopotamya — Türkçe karakterli yaz",
+    "Yer adları: Ur, Uruk, Ninova, Giza — bilinen Türkçe/uluslararası yazımı koru",
+    "Kişi adları: Tutankamon, Kleopatra, Hammurabi — uydurma Türkçeleştirme yapma",
+    "bir şey / her şey / hiçbir şey / her biri ayrı; birçok / birkaç / herkes bitişik",
+    "«…larından biri» öncesinde tamlayan eki: Mezopotamya'nın krallıklarından (Mezopotamya'da değil)",
+    "Bağlaç de/da ayrı; bulunma -de/-da bitişik; özel isim+ek kesmeli, cins isim+ek kesmesiz"
+  ]
+}

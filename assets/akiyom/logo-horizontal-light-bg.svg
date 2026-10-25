@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 640 160" role="img" aria-label="Akiyom">
+  <rect width="640" height="160" fill="#ffffff"/>
+  <defs>
+    <style>
+      .wordmark {
+        font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-size: 56px;
+        font-weight: 600;
+        fill: #111111;
+        letter-spacing: 0.06em;
+      }
+    </style>
+  </defs>
+  <image x="8" y="8" width="144" height="144" href="logo-icon.png" preserveAspectRatio="xMidYMid meet"/>
+  <text class="wordmark" x="176" y="98">Akiyom</text>
+</svg>

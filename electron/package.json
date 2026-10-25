@@ -1,0 +1,17 @@
+{
+  "name": "akifactory",
+  "productName": "AkiFactory",
+  "version": "2.8.30",
+  "description": "AkiFactory masaustu kabugu (Electron)",
+  "main": "main.js",
+  "author": "Akiyom",
+  "private": true,
+  "scripts": {
+    "repair": "node repair-electron.js",
+    "start": "electron .",
+    "dev": "node repair-electron.js && electron ."
+  },
+  "devDependencies": {
+    "electron": "^35.7.5"
+  }
+}

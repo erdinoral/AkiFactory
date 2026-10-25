@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0D0D0D" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <title>AkiFactory — Akiyom</title>
+  <link rel="icon" type="image/png" href="/assets/icon.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/app.css?v=2.8.30" />
+</head>
+<body class="akiyom-app">
+  <div class="background-base-layer" aria-hidden="true"></div>
+  <div class="background-effects-layer" aria-hidden="true">
+    <div class="light-refraction light-1"></div>
+    <div class="light-refraction light-2"></div>
+    <div class="light-refraction light-3"></div>
+  </div>
+  <div class="content-safety-layer" aria-hidden="true"></div>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <div id="setup-modal" class="setup-modal hidden" role="dialog" aria-modal="true" aria-labelledby="setup-modal-title">
+    <div class="setup-modal-backdrop"></div>
+    <div class="panel setup-modal-card">
+      <h2 id="setup-modal-title" class="section-title-sm">Ilk kurulum</h2>
+      <p class="hint">Ilk acilista ffmpeg ve LLM modelleri (qwen3.5:9b yazar, qwen3:14b editor) otomatik indirilir. Ollama kurulu olmali; internet acik tutun.</p>
+      <ul class="setup-check-list" id="setup-modal-checks"></ul>
+      <div class="setup-modal-actions">
+        <button type="button" class="btn-ghost" id="btn-setup-modal-later">Sonra</button>
+        <button type="button" class="btn-primary" id="btn-setup-modal-run">Kurulumu tamamla</button>
+      </div>
+      <p class="hint" id="setup-modal-hint"></p>
+    </div>
+  </div>
+
+  <div class="content-layer">
+    <header class="navbar top">
+      <div class="nav-container">
+        <div class="nav-brand brand">
+          <div class="nav-logo">
+            <img src="/assets/logo.png" alt="AkiFactory" class="nav-logo-img" width="40" height="40" />
+          </div>
+          <div>
+            <p class="nav-brand-text">
+              Aki<span class="brand-accent">Factory</span>
+            </p>
+            <p class="tag">Akiyom · Kisa video studyosu</p>
+          </div>
+        </div>
+
+        <div class="nav-tabs-row">
+          <nav class="tabs" role="tablist" aria-label="Ana sekmeler">
+            <button type="button" class="tab active" data-tab="produce" role="tab">Uretim</button>
+            <button type="button" class="tab" data-tab="wangp" role="tab">H3 Studio Prompt</button>
+            <button type="button" class="tab" data-tab="fooocus" role="tab">Qwen Gorsel</button>
+            <button type="button" class="tab" data-tab="voiceconvert" role="tab">Ses Donustur</button>
+            <button type="button" class="tab" data-tab="gallery" role="tab">Galeri</button>
+            <button type="button" class="tab" data-tab="analyze" role="tab">Istatistik</button>
+            <button type="button" class="tab" data-tab="settings" role="tab">Ayarlar</button>
+          </nav>
+
+          <div class="status-pills" aria-label="Motor durumu">
+            <div id="api-pill" class="pill starting">Motor baslatiliyor...</div>
+            <div id="ollama-pill" class="pill warn">Ollama kontrol...</div>
+            <div class="ios-lang-switch" title="Arayuz dili / Interface language" data-no-i18n>
+              <button type="button" class="ios-mode-label ios-lang-tr" data-ui-lang="tr">TR</button>
+              <button type="button" class="ios-switch-track" role="switch" aria-checked="false" aria-label="Turkce / English">
+                <span class="ios-switch-thumb"></span>
+              </button>
+              <button type="button" class="ios-mode-label ios-lang-en" data-ui-lang="en">EN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p id="startup-step" class="startup-step">Python ortami hazirlaniyor...</p>
+    </header>
+
+    <!-- URETIM -->
+    <main class="view view-active page-main produce-view" id="view-produce">
+      <nav class="produce-subtabs" role="tablist" aria-label="Uretim turu">
+        <button type="button" class="produce-subtab active" data-produce-tab="short" role="tab" aria-selected="true">
+          Kisa video
+        </button>
+        <button type="button" class="produce-subtab" data-produce-tab="long" role="tab" aria-selected="false">
+          Uzun video
+        </button>
+        <button type="button" class="produce-subtab" data-produce-tab="produced" role="tab" aria-selected="false">
+          Uretilenler
+        </button>
+      </nav>
+
+      <div class="produce-workspace" id="produce-workspace">
+        <aside class="panel form-panel produce-common-panel" id="produce-common-panel" aria-label="Ortak ayarlar">
+          <h2 class="section-title-sm">Ortak ayarlar</h2>
+          <p class="hint">Kisa ve uzun video ayni ses, senaryo, altyazi ve intro/outro ayarlarini kullanir.</p>
+
+          <label data-help="Senaryo, seslendirme ve altyazinin dili. Cift dil acikken once Turkce sonra Ingilizce uretilir; bu alan ana dili belirler.">
+            <span>Uretim dili</span>
+            <select id="production-lang">
+              <option value="tr" selected>Turkce</option>
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Francais</option>
+            </select>
+          </label>
+
+          <p id="last-voice-summary" class="hint voice-last-summary">Son ses: yukleniyor…</p>
+
+          <div id="voice-manual-panel" class="voice-manual-panel">
+          <label data-help="Seslendirme motoru. Edge TTS dogal sinir agi; Chatterbox yerel taban + RVC karakter; RVC (Edge taban) hizli yol.">
+            <span>Ses motoru</span>
+            <select id="tts-engine">
+              <option value="edge" selected>Yukleniyor…</option>
+            </select>
+          </label>
+
+          <p id="tts-badge" class="tts-badge hidden"></p>
+
+          <label id="edge-voice-wrap" class="edge-voice-wrap" data-help="Microsoft Edge TTS sesi. Turkce icin Emel (kadin) onerilir; internet baglantisi gerekir.">
+            <span id="edge-voice-label">Edge sesi (Turkce sinir agi)</span>
+            <select id="edge-voice">
+              <option value="tr-TR-AhmetNeural-Male">Erkek — Ahmet (onerilen)</option>
+              <option value="tr-TR-EmelNeural-Female">Kadin — Emel</option>
+            </select>
+          </label>
+
+          <label id="rvc-voice-wrap" class="rvc-voice-wrap hidden" data-help="RVC ses modeli — Edge Ahmet telaffuz uzerinden Erdin Oral gibi ozel sesler. models/rvc/ altina .pth koyun.">
+            <span id="rvc-voice-label">RVC sesi (son katman)</span>
+            <select id="rvc-voice">
+              <option value="">Yukleniyor…</option>
+            </select>
+          </label>
+          <p id="rvc-folder-hint" class="hint rvc-folder-hint hidden">
+            Yeni ses: <code>models/rvc/SesAdi/</code> klasorune <code>.pth</code> koy, sayfayi yenile.
+          </p>
+
+          <p id="rvc-simple-hint" class="hint rvc-simple-hint hidden">
+            Secilen RVC sesi — varsayilan ayarlar genelde yeterli.
+          </p>
+          <div id="rvc-preset-bar" class="btn-row rvc-preset-bar hidden" style="margin:0.4rem 0 0.6rem;flex-wrap:wrap;gap:0.4rem;">
+            <button type="button" id="btn-rvc-preset-documentary" class="btn-primary btn-sm" data-help="Gelismis RVC ayarlarini acar; mevcut degerleri degistirmez.">Belgeselci ton</button>
+            <button type="button" id="btn-rvc-preset-default" class="btn-ghost btn-sm">Varsayilan sifirla</button>
+          </div>
+          <details id="rvc-settings-wrap" class="accordion rvc-settings hidden">
+            <summary>Gelismis RVC ayarlari (istege bagli)</summary>
+            <div class="accordion-body">
+              <label class="range-field">
+                <span>Konusma hizi: <strong id="voice-rate-val">1.08</strong> — 1.0 = normal, 0.98 = belgesel</span>
+                <input type="range" id="voice-rate" min="0.85" max="1.25" step="0.01" value="1.08" />
+              </label>
+              <label class="range-field">
+                <span>Ses tonu (pitch): <strong id="rvc-pitch-val">0</strong> — 0 = modelin kendi tonu</span>
+                <input type="range" id="rvc-pitch" min="-12" max="12" step="1" value="0" />
+              </label>
+              <label class="range-field">
+                <span>Model orani: <strong id="rvc-index-val">0.65</strong> — dusuk = daha dogal, yuksek = daha cok karakter</span>
+                <input type="range" id="rvc-index-rate" min="0" max="1" step="0.05" value="0.65" />
+              </label>
+              <p class="hint">Belgeselci ton: Ahmet + hiz 0.98 + pitch 0 + model orani 0.65. Sonra «Ses uret ve dinle».</p>
+            </div>
+          </details>
+          </div>
+
+          <div class="voice-test-panel" id="voice-test-panel">
+            <div class="voice-test-head">
+              <div>
+                <h3 class="section-title-sm">Ses testi</h3>
+                <p class="hint">~30 sn hikaye — sadece ses. Yukaridaki motor/ses ayarlari kullanilir.</p>
+              </div>
+              <button type="button" id="btn-voice-test" class="btn-primary btn-sm">Ses uret ve dinle</button>
+            </div>
+            <p id="voice-test-status" class="hint voice-test-status">Hazir.</p>
+            <audio id="voice-test-audio" class="voice-test-audio hidden" controls preload="none"></audio>
+          </div>
+
+
+          <p class="hint hint-block" id="tts-hint">Metin, ses ve altyazi secilen dilde uretilir.</p>
+
+          <label class="toggle-row" data-help="Ilk cumleyi guclendirir ve senaryoya editor cilasi uygular. Acilis hook'u konuya ozel yapar; Ayarlar > Hook'taki ornekleri kullanir.">
+            <input type="checkbox" id="strengthen-hook" checked />
+            <span>Guclu senaryo (acilis + editor cilasi)</span>
+          </label>
+
+          <label class="toggle-row" data-help="Ayni yazar modeli iki gecis yapar: once senaryo taslagi, sonra web/arastirma ile olgu dogrulama. Ayrı buyuk editor modeli kullanilmaz.">
+            <input type="checkbox" id="dual-llm" checked />
+            <span>Iki gecis kalite (yazar + web dogrulama)</span>
+          </label>
+
+          <label class="toggle-row" id="editor-web-verify-wrap" data-help="Wikipedia ve web aramasi ile bilgi dogrulamasi. Ayni yazar modeli uygular; tarih/gizem hatalarini azaltir.">
+            <input type="checkbox" id="editor-web-verify" checked />
+            <span>Web dogrulama (Wikipedia + web)</span>
+          </label>
+
+          <div id="editor-model-wrap">
+            <label data-help="Senaryo + dogrulama LLM. Ollama modelleri veya Ayarlar → LLM API (Gemini/OpenAI vb.) kaydedilince burada listelenir.">
+              <span>Yazar modeli (senaryo + dogrulama)</span>
+              <select id="writer-model">
+                <option value="">Yukleniyor…</option>
+              </select>
+            </label>
+            <label id="editor-model-field" class="hidden" data-help="Ayrı editor kapali — yazar modeli kullanilir.">
+              <span>Editor modeli (devre disi)</span>
+              <select id="editor-model">
+                <option value="">Yukleniyor…</option>
+              </select>
+            </label>
+          </div>
+
+          <details class="accordion" id="subtitle-accordion" data-help="Videoya yanik altyazi stili. Platforma gore konum ve renk otomatik ayarlanabilir; onizleme kutusunda gorursun.">
+            <summary>Altyazi stili</summary>
+            <div class="accordion-body">
+              <label data-help="Hazir altyazi sablonu. TikTok Klasik beyaz kalin yazi; YouTube sarili kutu; Kapali altyazisiz video uretir.">
+                <span>Sablon</span>
+                <select id="subtitle-style">
+                  <option value="tiktok_classic">TikTok Klasik</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="off">Kapali</option>
+                  <option value="custom">Ozel</option>
+                </select>
+              </label>
+              <label data-help="Altyazinin ekrandaki konumu. Reels icin orta, TikTok ve Shorts icin alt onerilir.">
+                <span>Konum</span>
+                <select id="sub-position">
+                  <option value="bottom">Alt</option>
+                  <option value="center" selected>Orta</option>
+                  <option value="top">Ust</option>
+                </select>
+              </label>
+              <div id="sub-preview" class="sub-preview sub-preview-tiktok sub-pos-center" aria-hidden="true">
+                <span class="sub-preview-text">Ornek altyazi</span>
+              </div>
+              <div id="subtitle-manual" class="subtitle-manual hidden">
+                <div class="grid-2">
+                  <label>
+                    <span>Font boyutu</span>
+                    <select id="sub-font-size">
+                      <option value="small">Kucuk</option>
+                      <option value="medium" selected>Orta</option>
+                      <option value="large">Buyuk</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="grid-2">
+                  <label>
+                    <span>Renk</span>
+                    <input type="color" id="sub-color" value="#ffffff" />
+                  </label>
+                  <label class="toggle-row">
+                    <input type="checkbox" id="sub-bg-box" />
+                    <span>Arka plan kutusu</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </details>
+
+
+          <details class="accordion" id="outro-accordion" data-help="Kanalin intro (basa) ve outro (sona) klipleri. Ayarlar > Dosyalar'dan yukleyebilirsin.">
+            <summary>Kanal intro / outro</summary>
+            <div class="accordion-body">
+              <label data-help="Secili kanalin introsu videonun basina, outrosu sonuna eklenir. Abone ol cagrisi veya kanal logosu icin kullanilir.">
+                <span>Kanal</span>
+                <select id="outro">
+                  <option value="">Intro / outro yok</option>
+                </select>
+              </label>
+              <p id="outro-hint" class="hint">
+                Her kanal icin klasor: <code>data/outros/kanal_adi/outro.mp4</code>
+              </p>
+            </div>
+          </details>
+
+        </aside>
+        <div class="produce-workspace-main">
+      <div id="produce-panel-short" class="produce-subpanel produce-subpanel-active">
+      <div class="layout layout-3col">
+      <section class="panel form-panel">
+        <div class="short-mode-head">
+          <div>
+            <h2 class="section-title-sm">Konu</h2>
+            <p class="hint" id="short-mode-hint">Stok gorsellerle tam otomatik video uretimi.</p>
+          </div>
+          <div class="ios-mode-switch" title="Otomatik: stok gorsellerle tam uretim. Manuel: montaj dosyalarini ayri hazirlar.">
+            <button type="button" class="ios-mode-label ios-mode-auto" data-production-mode="automatic">Otomatik</button>
+            <input type="checkbox" id="production-mode-manual" aria-label="Manuel uretim modu" />
+            <button type="button" class="ios-switch-track" id="production-mode-toggle" role="switch" aria-checked="false" aria-label="Otomatik ve manuel mod arasinda gecis">
+              <span class="ios-switch-thumb"></span>
+            </button>
+            <button type="button" class="ios-mode-label ios-mode-manual" data-production-mode="manual">Manuel</button>
+          </div>
+        </div>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="auto-ai-cover" />
+          <span>Video bitince AI kapak oluştur</span>
+        </label>
+        <p class="hint" id="ai-cover-setting-status">Qwen görseli yazısız üretir; video başlığı kapağa eklenir.</p>
+        <button type="button" class="btn-ghost btn-sm" id="btn-ai-cover-install">AI kapak motorunu kur</button>
+        <p class="hint" id="ai-cover-install-status">İsteğe bağlı yerel kurulum: NVIDIA ekran kartı, yaklaşık 30 GB model indirmesi ve ek çalışma alanı gerekir.</p>
+        <div class="grid-2">
+          <label data-help="Videonun icerik alanini secer. Senaryo tonu, hook ornekleri ve arka plan muzigi bu nise gore ayarlanir.">
+            <span>Icerik nisi</span>
+            <select id="niche">
+              <option value="tarih_gizem" selected>Yukleniyor…</option>
+            </select>
+          </label>
+          <label class="toggle-row niche-actions" data-help="Secili nise uygun yeni video konusu onerir. Daha once uretilmis konulari tekrarlamaz.">
+            <button type="button" id="btn-suggest-topics" class="btn-ghost btn-sm">Konu oner</button>
+          </label>
+        </div>
+        <p id="topic-memory-hint" class="hint topic-memory-hint hidden"></p>
+        <label class="toggle-row" data-help="LLM'e daha cesur ve viral Shorts tonu kullanmasini soyler. Deneysel mod; yine de konuya sadik kalmaya calisir.">
+          <input type="checkbox" id="niche-experimental" />
+          <span>Deneysel nis sablonu (daha cesur ton)</span>
+        </label>
+
+        <label class="toggle-row" data-help="Tek seferde birden fazla konu icin video uretir. Her konu sirayla islenir; en fazla 10 konu ekleyebilirsin.">
+          <input type="checkbox" id="batch-mode" />
+          <span>Seri uretim (en fazla 10 konu)</span>
+        </label>
+
+        <label for="subject" class="block-field-label" data-help="Videonun ana konusu. Bu metinden senaryo, seslendirme ve stok video anahtar kelimeleri uretilir.">
+          <span>Video konusu</span>
+        </label>
+        <div id="single-topic-wrap">
+          <textarea id="subject" rows="3" placeholder="Orn: Osmanli sarayindaki gizemli olaylar"></textarea>
+          <datalist id="history-datalist"></datalist>
+        </div>
+
+        <div id="batch-topics-wrap" class="batch-wrap hidden">
+          <ul id="batch-list" class="batch-list"></ul>
+          <button type="button" id="btn-add-topic" class="btn-ghost btn-sm">+ Konu ekle</button>
+        </div>
+
+        <div class="grid-2">
+          <label data-help="Hedef platform. Video boyutu, klip suresi ve altyazi konumu otomatik ayarlanir (TikTok, Shorts, Reels vb.).">
+            <span>Platform</span>
+            <select id="platform">
+              <option value="tiktok">🎵 TikTok</option>
+              <option value="youtube_shorts">📺 YouTube Shorts</option>
+              <option value="instagram_reels">📸 Instagram Reels</option>
+              <option value="linkedin">💼 LinkedIn Video</option>
+              <option value="custom">⚙️ Ozel</option>
+            </select>
+          </label>
+          <label data-help="Otomatik modda stok kaynaklari; manuel modda stok, yerel dosya ve H3 Studio secenekleri kullanilir.">
+            <span>Goruntu kaynagi</span>
+            <select id="source">
+              <option value="pexels" selected>Pexels (stok)</option>
+              <option value="pixabay">Pixabay (stok)</option>
+              <option value="pexels+pixabay">Her ikisi (akilli)</option>
+              <option value="pinokio" data-manual-only>Pinokio H3 Studio (AI)</option>
+              <option value="local" data-manual-only>Yerel dosya</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="custom-format-wrap" class="grid-2 hidden">
+          <label data-help="Ozel platformda video en-boy orani. Dikey 9:16 Shorts/TikTok icin; 16:9 YouTube uzun video icin.">
+            <span>Format (ozel)</span>
+            <select id="aspect">
+              <option value="9:16" selected>Dikey 9:16</option>
+              <option value="16:9">Yatay 16:9</option>
+              <option value="1:1">Kare 1:1</option>
+            </select>
+          </label>
+          <label data-help="Her stok klip kac saniye kullanilsin. Kisa klip daha hizli tempo, uzun klip daha sakin montaj verir.">
+            <span>Klip suresi (sn)</span>
+            <input type="number" id="clip-dur" min="2" max="10" value="5" />
+          </label>
+        </div>
+
+        <label class="toggle-row" data-help="Once uretim dilinde video uretilir, ardindan ayni gorsellerle secilen 2. dilde ses ve altyazili ikinci video olusturulur.">
+          <input type="checkbox" id="dual-language" />
+          <span>Cift dil (peş peşe 2 video)</span>
+        </label>
+        <label id="dual-second-lang-wrap" class="hidden" data-help="Ikinci videonun dili. Uretim dili bu listede gosterilmez.">
+          <span>2. dil</span>
+          <select id="dual-second-lang"></select>
+        </label>
+        <p id="dual-language-hint" class="hint hidden"></p>
+
+        <p id="video-auto-summary" class="hint video-auto-summary">1 video · klip 5 sn (platforma gore otomatik)</p>
+
+        <details class="accordion" id="video-settings-accordion" data-help="Video sayisi ve klip suresi gibi gelismis montaj ayarlari. Cogu kullanici icin varsayilanlar yeterlidir.">
+          <summary>Gelismis video ayarlari</summary>
+          <div class="accordion-body grid-2">
+            <label data-help="Ayni konudan kac farkli montaj uretilsin. Her biri farkli klip secimi veya siralama ile olusabilir (1–5).">
+              <span>Video sayisi</span>
+              <input type="number" id="count" min="1" max="5" value="1" />
+              <span class="hint">Ayni konudan kac farkli montaj (1–5)</span>
+            </label>
+            <label id="clip-dur-wrap" data-help="Stok videolardan kesilen her klip kac saniye olsun. Platforma gore onerilen deger otomatik gelir.">
+              <span>Klip suresi (sn)</span>
+              <input type="number" id="clip-dur-main" min="2" max="10" value="5" />
+              <span class="hint">Stok klip kesim suresi (2–10 sn)</span>
+            </label>
+          </div>
+        </details>
+
+        <details class="accordion" id="bgm-accordion" data-help="Videonun arka plan muzigi. Nise uygun parca otomatik secilir veya kendi MP3 dosyalarini kullanabilirsin.">
+          <summary>Arka plan muzigi</summary>
+          <div class="accordion-body">
+            <label data-help="Muzik secim modu: nise gore otomatik, rastgele, elle parca sec veya muziksiz uret.">
+              <span>Muzik modu</span>
+              <select id="bgm-mode">
+                <option value="niche" selected>Nişe uygun (otomatik sec)</option>
+                <option value="random">Tum niş parcalarindan rastgele</option>
+                <option value="custom">Parca sec</option>
+                <option value="none">Muzik yok</option>
+              </select>
+            </label>
+            <p id="bgm-niche-hint" class="hint bgm-niche-hint"></p>
+            <label id="bgm-track-wrap" class="hidden" data-help="Listeden belirli bir arka plan parcasi sec. Onizle ile dinleyebilirsin.">
+              <span>Parca</span>
+              <select id="bgm-track">
+                <option value="">— Parca sec —</option>
+              </select>
+            </label>
+            <div id="bgm-preview-wrap" class="bgm-preview-wrap hidden">
+              <button type="button" id="btn-bgm-preview" class="btn-ghost btn-sm">Onizle</button>
+              <audio id="bgm-preview-audio" preload="none"></audio>
+            </div>
+            <label data-help="Arka plan muziginin ses seviyesi. Konusma sesinin uzerine cikmamasi icin genelde dusuk tutulur.">
+              <span>Muzik sesi: <strong id="bgm-volume-val">20</strong>%</span>
+              <input type="range" id="bgm-volume" min="0" max="100" step="5" value="20" />
+            </label>
+            <p id="bgm-folder-hint" class="hint">MP3 dosyalarini niş klasorune koy: <code>data/bgm/tarih_gizem/</code></p>
+          </div>
+        </details>
+
+        <div class="btn-row">
+          <button id="btn-preview-script" class="btn-ghost" type="button" data-help="Video uretmeden once LLM ile senaryo metnini onizle. Metni duzenleyip sonra uretebilirsin.">Senaryoyu goster</button>
+          <button id="btn-save-draft" class="btn-ghost" type="button" title="Tum ayarlari ve senaryoyu kaydet" data-help="Mevcut konu, ayarlar ve varsa senaryoyu taslak olarak kaydeder. Sonra ayni yerden devam edebilirsin.">Taslağı kaydet</button>
+          <button id="btn-generate" class="btn-primary" type="button" title="" data-help="Tum adimlari baslatir: senaryo, ses, stok klip, altyazi ve montaj. Uretim birkaç dakika surebilir.">Videoyu uret</button>
+        </div>
+        <label class="draft-label-field">
+          <span>Taslak adi (istege bagli)</span>
+          <input type="text" id="draft-label" placeholder="Orn: Tutankamon gizemi" maxlength="80" />
+        </label>
+        <p id="draft-status" class="hint draft-status hidden"></p>
+        <p id="status-msg" class="status-msg"></p>
+
+        <section class="drafts-section">
+          <div class="history-head">
+            <h3 class="section-title-xs">Taslaklar</h3>
+          </div>
+          <p class="hint drafts-hint">Konu, ayarlar ve senaryo kaydedilir — tiklayinca her sey geri yuklenir.</p>
+          <ul id="drafts-list" class="history-list drafts-list">
+            <li class="history-empty">Henuz taslak yok.</li>
+          </ul>
+        </section>
+
+        <section class="history-section">
+          <div class="history-head">
+            <h3 class="section-title-xs">Son kullanilanlar</h3>
+            <select id="history-filter" class="history-filter">
+              <option value="all">Tumu</option>
+              <option value="fav">Favoriler</option>
+            </select>
+          </div>
+          <ul id="history-list" class="history-list">
+            <li class="history-empty">Henuz kayit yok.</li>
+          </ul>
+        </section>
+      </section>
+
+      <section class="panel out-panel">
+        <h2 class="section-title-sm">Cikti</h2>
+        <div id="pipeline-wrap" class="pipeline-wrap hidden" aria-live="polite">
+          <div class="pipeline-head">
+            <span id="pipeline-title" class="pipeline-title">Uretim</span>
+            <span id="pipeline-sublabel" class="pipeline-sublabel"></span>
+          </div>
+          <ol id="pipeline-steps" class="pipeline-steps"></ol>
+        </div>
+        <div class="progress-wrap hidden" id="progress-wrap">
+          <div class="progress-bar"><div id="progress-fill"></div></div>
+          <span id="progress-text">0%</span>
+        </div>
+        <div class="preview-wrap">
+          <div id="preview-toolbar" class="preview-toolbar hidden" aria-label="Onizleme kontrolleri">
+            <button type="button" id="btn-preview-zoom-out" class="btn-icon" title="Kucult">−</button>
+            <button type="button" id="btn-preview-zoom-reset" class="btn-icon" title="Boyutu sifirla">100%</button>
+            <button type="button" id="btn-preview-zoom-in" class="btn-icon" title="Buyut">+</button>
+            <button type="button" id="btn-preview-expand" class="btn-icon" title="Buyuk mod">⛶</button>
+            <button type="button" id="btn-preview-shrink" class="btn-icon hidden" title="Geri / normal boyut">↩ Geri</button>
+          </div>
+          <div id="preview" class="preview empty">
+            <p>Henuz video yok.</p>
+          </div>
+          <p id="preview-output-meta" class="hint preview-output-meta hidden"></p>
+        </div>
+        <div class="out-actions">
+          <button type="button" id="btn-download" class="btn-ghost hidden">Indir...</button>
+          <button type="button" id="btn-open-gallery" class="btn-ghost hidden">Galeride gor</button>
+        </div>
+
+        <section id="publish-pack" class="publish-pack hidden" aria-live="polite">
+          <div class="publish-pack-head">
+            <h3 class="section-title-xs">Yayin paketi</h3>
+            <p id="publish-pack-meta" class="hint"></p>
+          </div>
+          <p id="publish-pack-status" class="status-msg"></p>
+
+          <div class="publish-block publish-block-titles">
+            <h4 class="publish-block-title">Baslik <span class="publish-rank-hint">(editor secimi)</span></h4>
+            <ol id="publish-titles" class="publish-list"></ol>
+            <p id="publish-title-alts" class="hint publish-alt-hint hidden"></p>
+          </div>
+
+          <div class="publish-block publish-block-descriptions">
+            <h4 class="publish-block-title">Aciklama / caption</h4>
+            <ol id="publish-descriptions" class="publish-list"></ol>
+            <p id="publish-caption-alts" class="hint publish-alt-hint hidden"></p>
+          </div>
+
+          <div class="publish-block publish-block-hashtags">
+            <h4 class="publish-block-title">YouTube etiketleri</h4>
+            <div id="publish-hashtags" class="publish-tags-panel"></div>
+          </div>
+
+          <div class="publish-block publish-block-tips">
+            <h4 class="publish-block-title">Paylasim onerileri</h4>
+            <ol id="publish-share-tips" class="publish-tips-list"></ol>
+          </div>
+
+          <details class="accordion publish-wangp-block hidden" id="publish-wangp-wrap">
+            <summary>H3 Studio prompt (sahne senaryosu)</summary>
+            <div class="accordion-body">
+              <div class="wangp-output-head">
+                <span>Ana prompt</span>
+                <button type="button" id="btn-publish-copy-wangp" class="btn-ghost btn-sm">Kopyala</button>
+              </div>
+              <textarea id="publish-wangp-prompt" rows="6" readonly></textarea>
+              <div class="wangp-output-head">
+                <span>Negatif prompt</span>
+                <button type="button" id="btn-publish-copy-wangp-neg" class="btn-ghost btn-sm">Kopyala</button>
+              </div>
+              <textarea id="publish-wangp-negative" rows="2" readonly></textarea>
+            </div>
+          </details>
+        </section>
+      </section>
+
+      <section class="panel queue-panel" aria-label="Uretim kuyrugu">
+        <h2 class="section-title-sm">Kuyruk</h2>
+        <p class="hint queue-panel-hint">Siradaki isler ve canli ilerleme burada. Cikti sutunu yalnizca sizin baslattiginiz uretimi gosterir.</p>
+        <div id="queue-notifications" class="queue-notifications" aria-live="polite"></div>
+        <div class="production-stop-row hidden" id="production-stop-row">
+          <button type="button" class="btn-ghost btn-sm danger-text btn-stop-production" id="btn-stop-production">
+            Uretimi durdur
+          </button>
+          <button type="button" id="btn-cancel-batch" class="btn-ghost btn-sm danger-text btn-stop-production hidden" aria-hidden="true">Uretimi durdur</button>
+        </div>
+        <div id="batch-progress-wrap" class="batch-progress hidden">
+          <div class="progress-bar"><div id="batch-progress-fill"></div></div>
+          <span id="batch-progress-text">0/0</span>
+          <ul id="batch-task-lines" class="batch-task-lines"></ul>
+        </div>
+        <ol id="production-queue-list" class="production-queue-list"></ol>
+        <p id="queue-empty-hint" class="hint queue-empty-hint">Kuyruk bos — video uretince burada gorunur.</p>
+      </section>
+      </div>
+      </div>
+
+      <div id="produce-panel-long" class="produce-subpanel hidden" hidden>
+        <div class="layout layout-3col">
+          <section class="panel form-panel longform-panel">
+            <h2 class="section-title-sm">Ana konu</h2>
+            <p class="hint">
+              Montaj yapilmaz — tek parca ses, altyazi ve stok gorseller indirilir; videoyu kendiniz
+              duzenlersiniz. Alt basliklar ana konunun parcasidir (ornek: «tarihcesi» = ana konunun tarihcesi).
+            </p>
+
+            <div class="grid-2">
+              <label>
+                <span>Icerik nisi</span>
+                <select id="longform-niche">
+                  <option value="tarih_gizem" selected>Yukleniyor…</option>
+                </select>
+              </label>
+              <label>
+                <span>Platform</span>
+                <select id="longform-platform">
+                  <option value="youtube" selected>▶️ YouTube (uzun — 16:9)</option>
+                  <option value="youtube_shorts">📺 YouTube Shorts (9:16)</option>
+                  <option value="tiktok">🎵 TikTok</option>
+                  <option value="instagram_reels">📸 Instagram Reels</option>
+                  <option value="linkedin">💼 LinkedIn Video</option>
+                  <option value="custom">⚙️ Ozel</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                <span>Goruntu orani</span>
+                <select id="longform-aspect">
+                  <option value="16:9" selected>16:9 yatay (YouTube uzun)</option>
+                  <option value="9:16">9:16 dikey (Shorts / Reels)</option>
+                  <option value="1:1">1:1 kare</option>
+                </select>
+              </label>
+              <p id="longform-aspect-hint" class="hint longform-aspect-hint">
+                Stok klipler ve AI promptlari bu orana gore secilir / yazilir.
+              </p>
+            </div>
+
+            <label>
+              <span>Ana konu basligi</span>
+              <textarea id="longform-subject" rows="3" placeholder="Orn: Gobeklitepe'nin gizemi — tum bolumler bu tek konunun alt basliklari olacak"></textarea>
+            </label>
+
+            <div class="btn-row btn-row-tight">
+              <button type="button" id="btn-longform-think" class="btn-ghost btn-sm" title="Konuyu birlikte dusun: acilar, hook ve bolum fikirleri">💡 Dusun</button>
+              <button type="button" id="btn-longform-plan" class="btn-ghost btn-sm">Bolumleri planla (LLM)</button>
+              <button type="button" id="btn-longform-think-open" class="btn-ghost btn-sm">Dusunme paneli</button>
+              <button type="button" id="btn-longform-add-chapter" class="btn-ghost btn-sm">+ Bolum ekle</button>
+            </div>
+
+            <div id="longform-think-panel" class="longform-think-panel hidden">
+              <div class="longform-think-head">
+                <h3 class="section-title-xs">💡 Dusunme paneli</h3>
+                <button type="button" id="btn-longform-think-close" class="btn-ghost btn-sm" title="Kapat">&times;</button>
+              </div>
+              <div id="longform-think-body" class="longform-think-body">
+                <p class="hint">Once <strong>Bolumleri planla</strong> deyin; taslak gelince burada sorular acilir. Her soruda tek secenek.</p>
+              </div>
+              <label class="longform-think-note-field">
+                <span>Ek yonlendirme (istege bagli)</span>
+                <textarea id="longform-think-note" rows="2" placeholder="Orn: gizem tonu agir bassin, kesif kismina odaklan, komplo teorilerine deginme"></textarea>
+              </label>
+              <div class="btn-row btn-row-tight">
+                <button type="button" id="btn-longform-think-again" class="btn-ghost btn-sm">Sorulari yenile</button>
+                <button type="button" id="btn-longform-think-plan" class="btn-ghost btn-sm" disabled>Dusun</button>
+</div>
+              <p id="longform-think-status" class="hint"></p>
+            </div>
+
+            <div class="longform-chapters-wrap">
+              <div class="longform-chapters-head">
+                <h3 class="section-title-xs">Bolumler</h3>
+                <span id="longform-chapter-count" class="hint">0 bolum</span>
+              </div>
+              <p class="hint longform-chapters-hint">
+                <strong>Ana konu</strong> sabit kalir. Asagidaki satirlar kisa <strong>alt baslik</strong>
+                (tarihcesi, kesfi, icerigi gibi). Uretimde tek ~10 dk ses + altyazi + gorseller verilir.
+              </p>
+              <ol id="longform-chapter-list" class="longform-chapter-list"></ol>
+            </div>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="longform-dual-language" />
+              <span>Cift dil TR + EN (once tum TR bolumler, sonra tum EN)</span>
+            </label>
+
+            <p id="longform-dual-hint" class="hint hidden">
+              TR bolumler bittikten sonra ayni kliplerle EN ses ve altyazi uretilir.
+            </p>
+
+            <details class="accordion" id="longform-settings-accordion">
+              <summary>Goruntu ayarlari</summary>
+              <div class="accordion-body">
+                <p class="hint">Ses, senaryo ve altyazi Ortak ayarlar sutunundan alinir. Goruntu orani yukaridaki secime gore uygulanir.</p>
+                <label>
+                  <span>Goruntu kaynagi</span>
+                  <select id="longform-source">
+                    <option value="pexels" selected>Pexels (stok)</option>
+                    <option value="pixabay">Pixabay (stok)</option>
+                    <option value="pexels+pixabay">Her ikisi (akilli)</option>
+                    <option value="local">Yerel dosya</option>
+                  </select>
+                </label>
+              </div>
+            </details>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="longform-auto-retry" checked />
+              <span>Hata alan bolumleri otomatik yeniden dene (en fazla 2 tur)</span>
+            </label>
+
+            <div class="btn-row">
+              <button type="button" id="btn-save-longform-draft" class="btn-ghost" title="Ana konu, bolumler ve ayarlari kaydet">
+                Taslağı kaydet
+              </button>
+              <button type="button" id="btn-longform-generate" class="btn-primary" disabled>
+                Ses + altyazi + gorselleri uret
+              </button>
+            </div>
+            <label class="draft-label-field">
+              <span>Taslak adi (istege bagli)</span>
+              <input type="text" id="longform-draft-label" placeholder="Orn: Voynich — 9 bolum" maxlength="80" />
+            </label>
+            <p id="longform-draft-status" class="hint draft-status hidden"></p>
+            <section class="drafts-section longform-drafts-section longform-drafts-inline">
+              <div class="history-head">
+                <h3 class="section-title-xs">Taslaklar</h3>
+                <button type="button" id="btn-longform-drafts-refresh" class="btn-ghost btn-sm">Yenile</button>
+              </div>
+              <p class="hint drafts-hint">Ana konu, bolum basliklari ve bolum senaryolari kaydedilir.</p>
+              <ul id="longform-drafts-list" class="history-list drafts-list">
+                <li class="history-empty">Henuz taslak yok.</li>
+              </ul>
+            </section>
+            <p id="longform-status" class="status-msg"></p>
+          </section>
+
+          <section class="panel out-panel longform-out-panel">
+            <h2 class="section-title-sm">Plan ve galeri</h2>
+            <div id="longform-pipeline-wrap" class="pipeline-wrap hidden" aria-live="polite">
+              <div class="pipeline-head">
+                <span id="longform-pipeline-title" class="pipeline-title">Uretim</span>
+                <span id="longform-pipeline-sublabel" class="pipeline-sublabel"></span>
+              </div>
+              <ol id="longform-pipeline-steps" class="pipeline-steps"></ol>
+            </div>
+            <p class="hint">
+              Uretim bitince asagidan ses, altyazi ve stok klipleri indirin. Her bolum ayri klasorde
+              (<code>01-tarihcesi/audio-tr.mp3</code>, <code>subtitle-tr.srt</code> …). Tam senaryo
+              <code>script-tr.txt</code> — her bolum editor incelemesinden ve son birlestirme kontrolunden gecer.
+            </p>
+            <div id="longform-plan-summary" class="longform-plan-summary empty">
+              <p>Once ana konu yazin ve <strong>Bolumleri planla</strong> deyin.</p>
+            </div>
+            <div class="out-actions">
+              <button type="button" id="btn-longform-open-gallery" class="btn-ghost">Galeride gor</button>
+            </div>
+          </section>
+
+          <section class="panel queue-panel queue-panel-long" aria-label="Uretim kuyrugu">
+            <h2 class="section-title-sm">Kuyruk</h2>
+            <div id="queue-notifications-long" class="queue-notifications" aria-live="polite"></div>
+            <div class="production-stop-row hidden" id="longform-production-stop-row">
+              <button type="button" class="btn-ghost btn-sm danger-text btn-stop-production" id="btn-stop-production-long">
+                Uretimi durdur
+              </button>
+              <button type="button" id="btn-longform-cancel" class="btn-ghost btn-sm danger-text btn-stop-production hidden" aria-hidden="true">Uretimi durdur</button>
+            </div>
+            <div id="longform-progress-wrap" class="batch-progress hidden">
+              <div class="progress-bar"><div id="longform-progress-fill"></div></div>
+              <span id="longform-progress-text">0/0</span>
+              <ul id="longform-task-lines" class="batch-task-lines"></ul>
+              <div id="longform-retry-row" class="btn-row hidden">
+                <button type="button" id="btn-longform-retry" class="btn-ghost btn-sm">
+                  Basarisiz bolumleri tekrar uret
+                </button>
+              </div>
+            </div>
+            <ol id="production-queue-list-long" class="production-queue-list"></ol>
+            <p class="hint queue-empty-hint">Kuyruk bos.</p>
+          </section>
+        </div>
+      </div>
+
+        </div>
+      </div>
+
+      <div id="produce-panel-produced" class="produce-subpanel hidden" hidden>
+        <section class="panel form-panel produced-panel">
+          <div class="produced-panel-head">
+            <div>
+              <h2 class="section-title-sm">Uretilenler</h2>
+              <p class="hint">Uretim sirasina gore (eskiden yeniye). Galeriden silersen burada da dusulur.</p>
+            </div>
+            <button type="button" id="btn-produced-refresh" class="btn-ghost btn-sm">Yenile</button>
+          </div>
+          <label class="produced-niche-field" data-help="Hangi nisin uretilenlerini gormek istedigini sec.">
+            <span>Icerik nisi</span>
+            <select id="produced-niche"></select>
+          </label>
+          <ul id="produced-list" class="history-list produced-list">
+            <li class="history-empty">Bu niste henuz uretim yok.</li>
+          </ul>
+        </section>
+      </div>
+
+    </main>
+
+    <!-- WAN2GP PROMPT -->
+    <main class="view wangp-view page-main" id="view-wangp" hidden>
+      <section class="panel form-panel wangp-panel">
+        <h2 class="section-title-sm">H3 Studio Prompt</h2>
+        <p class="hint">
+          Ollama konuya gore H3 Studio sinematik SCENE / h3Prompt yazar (Pinokio H3 Yonetmen kurali).
+          Ciktiyi Pinokio <code>minimax-h3</code> prompt alanina yapistirirsin.
+        </p>
+
+        <label>
+          <span>Konu</span>
+          <textarea id="wangp-topic" rows="3" placeholder="Orn: Tutankamon mezarinin acilisi ve lanet efsanesi"></textarea>
+        </label>
+
+        <div class="btn-row btn-row-tight">
+          <button type="button" id="btn-wangp-from-subject" class="btn-ghost btn-sm">Uretim sekmesindeki konuyu al</button>
+        </div>
+
+        <div class="grid-2">
+          <label>
+            <span>Icerik nisi</span>
+            <select id="wangp-niche">
+              <option value="tarih_gizem" selected>Yukleniyor…</option>
+            </select>
+          </label>
+          <label>
+            <span>Sahne sayisi (tur basina)</span>
+            <input type="number" id="wangp-scene-count" min="9" max="12" value="10" />
+          </label>
+        </div>
+
+        <label>
+          <span>Uretim turu</span>
+          <input type="number" id="wangp-batch-count" min="1" max="4" value="3" />
+          <span class="hint">Her tur farkli aci/odak — H3 Studio'da peş peşe calistir (1=tur yok, 3=onerilen)</span>
+        </label>
+
+        <div class="grid-2">
+          <label>
+            <span>Gorsel stil</span>
+            <select id="wangp-style">
+              <option value="dark_mystery">Karanlik gizem / belgesel</option>
+            </select>
+          </label>
+          <label>
+            <span>H3 Studio satir / continue modu</span>
+            <select id="wangp-line-mode">
+              <option value="sliding_window">Sliding Window</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span>En-boy orani</span>
+          <select id="wangp-aspect">
+            <option value="9:16" selected>Dikey 9:16 (Shorts / TikTok)</option>
+            <option value="16:9">Yatay 16:9</option>
+          </select>
+        </label>
+
+        <div class="btn-row">
+          <button type="button" id="btn-wangp-generate" class="btn-primary">Prompt uret</button>
+        </div>
+        <p id="wangp-status" class="status-msg"></p>
+      </section>
+
+      <section class="panel out-panel wangp-out-panel">
+        <h2 class="section-title-sm">Cikti — H3 Studio'ya yapistir</h2>
+
+        <div class="wangp-output-block">
+          <div class="wangp-output-head">
+            <span id="wangp-prompt-tur-label">Ana prompt — Tur 1</span>
+            <button type="button" id="btn-wangp-copy-prompt" class="btn-ghost btn-sm" disabled>Kopyala</button>
+          </div>
+          <textarea id="wangp-prompt-out" rows="10" readonly placeholder="Prompt uretildikten sonra burada gorunur…"></textarea>
+        </div>
+
+        <div id="wangp-batches-wrap" class="wangp-output-block hidden">
+          <div class="wangp-output-head">
+            <span>Diger turlar (H3 Studio'da sirayla calistir)</span>
+          </div>
+          <ul id="wangp-batches-out" class="fooocus-variants-list"></ul>
+        </div>
+
+        <div class="wangp-output-block">
+          <div class="wangp-output-head">
+            <span>Negatif prompt</span>
+            <button type="button" id="btn-wangp-copy-negative" class="btn-ghost btn-sm" disabled>Kopyala</button>
+          </div>
+          <textarea id="wangp-negative-out" rows="3" readonly placeholder="Negatif terimler…"></textarea>
+        </div>
+
+        <div class="wangp-output-block">
+          <div class="wangp-output-head">
+            <span>H3 Studio kullanim notlari</span>
+          </div>
+          <p id="wangp-notes-out" class="wangp-notes hint">Uretim sonrasi H3 Studio icin oneriler burada gorunur.</p>
+        </div>
+
+        <details class="accordion wangp-help">
+          <summary>H3 Studio'da nasil kullanilir?</summary>
+          <div class="accordion-body hint">
+            <ol class="wangp-steps">
+              <li>Pinokio'da <strong>minimax-h3</strong> Studio'yu ac.</li>
+              <li>Ana prompttaki her <code>=== SCENE N ===</code> blogunu ayri shot olarak yapistir.</li>
+              <li>Continue zincirinde SCENE 2+ ilk satiri <em>Continue directly from the previous shot.</em> olmali.</li>
+              <li>Klip suresi 5 sn onerilir; muzik/BGM kapali (diegetic SFX OK).</li>
+              <li>Birden fazla tur urettiysen: once Tur 1'i bitir, sonra Tur 2/3'u sirayla yapistir (VRAM).</li>
+              <li>Oran: Shorts icin <strong>9:16</strong>; uzun video icin <strong>16:9</strong>.</li>
+            </ol>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <!-- FOOOCUS PROMPT -->
+    <main class="view fooocus-view page-main" id="view-fooocus" hidden>
+      <section class="panel form-panel fooocus-panel">
+        <h2 class="section-title-sm">Qwen Gorsel Prompt</h2>
+        <p class="hint">
+          Qwen konuya gore gorsel promptu ve negatif promptu hazirlar.
+        </p>
+
+        <label>
+          <span>Konu</span>
+          <textarea id="fooocus-topic" rows="3" placeholder="Orn: Antik Misir mezar odasinda mum isiginda altin maske"></textarea>
+        </label>
+
+        <div class="btn-row btn-row-tight">
+          <button type="button" id="btn-fooocus-from-subject" class="btn-ghost btn-sm">Uretim sekmesindeki konuyu al</button>
+        </div>
+
+        <div class="grid-2">
+          <label>
+            <span>Icerik nisi</span>
+            <select id="fooocus-niche">
+              <option value="tarih_gizem" selected>Yukleniyor…</option>
+            </select>
+          </label>
+          <label>
+            <span>Amac</span>
+            <select id="fooocus-purpose">
+              <option value="thumbnail">Kapak / thumbnail</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid-2">
+          <label>
+            <span>Gorsel stil</span>
+            <select id="fooocus-style">
+              <option value="photorealistic">Fotogercekci</option>
+            </select>
+          </label>
+          <label>
+            <span>Alternatif sayisi</span>
+            <select id="fooocus-variant-count">
+              <option value="1" selected>Yalnizca ana prompt</option>
+              <option value="2">+ 1 alternatif</option>
+              <option value="3">+ 2 alternatif</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span>En-boy orani</span>
+          <select id="fooocus-aspect">
+            <option value="9:16" selected>Dikey 9:16 (Shorts kapak)</option>
+            <option value="16:9">Yatay 16:9</option>
+            <option value="1:1">Kare 1:1</option>
+          </select>
+        </label>
+
+        <div class="btn-row">
+          <button type="button" id="btn-fooocus-generate" class="btn-primary">Prompt uret</button>
+        </div>
+        <p id="fooocus-status" class="status-msg"></p>
+      </section>
+
+      <section class="panel out-panel fooocus-out-panel">
+        <h2 class="section-title-sm">Cikti — Qwen gorsel</h2>
+
+        <div class="wangp-output-block">
+          <div class="wangp-output-head">
+            <span>Prompt</span>
+            <button type="button" id="btn-fooocus-copy-prompt" class="btn-ghost btn-sm" disabled>Kopyala</button>
+          </div>
+          <textarea id="fooocus-prompt-out" rows="8" readonly placeholder="Prompt uretildikten sonra burada gorunur…"></textarea>
+        </div>
+
+        <div class="wangp-output-block">
+          <div class="wangp-output-head">
+            <span>Negative Prompt</span>
+            <button type="button" id="btn-fooocus-copy-negative" class="btn-ghost btn-sm" disabled>Kopyala</button>
+          </div>
+          <textarea id="fooocus-negative-out" rows="3" readonly placeholder="Negatif terimler…"></textarea>
+        </div>
+
+        <div id="fooocus-variants-wrap" class="wangp-output-block hidden">
+          <div class="wangp-output-head">
+            <span>Alternatif promptlar</span>
+          </div>
+          <ul id="fooocus-variants-out" class="fooocus-variants-list"></ul>
+        </div>
+
+        <div class="wangp-output-block">
+          <div class="wangp-output-head">
+            <span>Qwen gorsel ayar ipuclari</span>
+          </div>
+          <p id="fooocus-notes-out" class="wangp-notes hint">Uretim sonrasi Qwen gorsel onerileri burada gorunur.</p>
+        </div>
+
+        <details class="accordion wangp-help">
+          <summary>Qwen gorselde nasil kullanilir?</summary>
+          <div class="accordion-body hint">
+            <ol class="wangp-steps">
+              <li>Qwen gorsel uygulamasini ac.</li>
+              <li><strong>Prompt</strong> kutusuna yukaridaki ana metni yapistir.</li>
+              <li><strong>Negative Prompt</strong> kutusuna negatif metni yapistir.</li>
+              <li>Aspect Ratio: <strong>9:16</strong> dikey kapak icin; Settings'ten Image Number = 1–2.</li>
+              <li>Performance: <strong>Speed</strong> hizli taslak, <strong>Quality</strong> final kapak icin.</li>
+              <li>Fotogercekci veya sinematik stili sec; oran degerini koru.</li>
+            </ol>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <!-- SES DONUSTUR (RVC) -->
+    <main class="view voiceconvert-view page-main" id="view-voiceconvert" hidden>
+      <section class="panel form-panel vc-panel">
+        <h2 class="section-title-sm">Ses Donustur (RVC)</h2>
+        <p class="hint">
+          Uzun bir ses kaydini yukle, hedef RVC modelini sec. Kaynak telaffuz korunur; sadece ses karakteri degisir.
+        </p>
+
+        <details class="accordion vc-quality-tips" open>
+          <summary>En iyi sonuc icin</summary>
+          <div class="accordion-body">
+            <ul class="vc-tips-list hint">
+              <li><strong>En temiz yol:</strong> Uret sekmesinde RVC ile video uret — once Edge metni okur, sonra modele donusturulur.</li>
+              <li>Kaynak: tek kisi, sessiz ortam, arka plan muzigi yok.</li>
+              <li>Format: <strong>WAV</strong> veya yuksek bitrateli MP3; mono veya stereo olabilir.</li>
+              <li>Model orani: <strong>0.65–0.85</strong> (varsayilan 0.75) — 1.0 bazen bozuk/robotik yapar.</li>
+              <li>Pitch: erkek ses → erkek model, kadin ses → kadin model; uyumsuzsa ±2–4 dene.</li>
+              <li>2 dakikadan uzun kayitlarda donusum birkaç dakika surebilir.</li>
+            </ul>
+          </div>
+        </details>
+
+        <label class="vc-file-label">
+          <span>Donusturulecek ses</span>
+          <input type="file" id="vc-file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.webm,.aac" />
+        </label>
+        <p id="vc-file-hint" class="hint">WAV, MP3, M4A… (en fazla 80 MB)</p>
+
+        <label>
+          <span>Hedef RVC sesi</span>
+          <select id="vc-rvc-voice">
+            <option value="">Yukleniyor…</option>
+          </select>
+        </label>
+        <p id="vc-rvc-hint" class="hint hidden">RVC modeli yok — Ayarlar veya <code>models/rvc/</code> klasorune .pth ekleyin.</p>
+
+        <details class="accordion vc-settings">
+          <summary>Gelismis RVC ayarlari</summary>
+          <div class="accordion-body">
+            <label class="range-field">
+              <span>Ses tonu (pitch): <strong id="vc-pitch-val">0</strong></span>
+              <input type="range" id="vc-pitch" min="-12" max="12" step="1" value="0" />
+            </label>
+            <label class="range-field">
+              <span>Model orani: <strong id="vc-index-val">0.75</strong> <span class="hint-inline">(0.65–0.85 onerilir)</span></span>
+              <input type="range" id="vc-index-rate" min="0" max="1" step="0.05" value="0.75" />
+            </label>
+          </div>
+        </details>
+
+        <div class="btn-row">
+          <button type="button" id="btn-vc-convert" class="btn-primary">Donustur</button>
+          <button type="button" id="btn-vc-refresh-models" class="btn-ghost">Modelleri tara</button>
+        </div>
+        <p id="vc-status" class="status-msg"></p>
+      </section>
+
+      <section class="panel out-panel vc-out-panel">
+        <h2 class="section-title-sm">Onizleme</h2>
+        <div class="vc-preview-block">
+          <div id="vc-preview-loading" class="vc-preview-loading hidden" aria-live="polite" aria-busy="false">
+            <div class="vc-loading-visual" aria-hidden="true">
+              <div class="vc-loading-spinner"></div>
+              <div class="vc-loading-bars">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <p id="vc-loading-text" class="vc-loading-text">Ses dosyasi hazirlaniyor…</p>
+            <p id="vc-loading-sub" class="vc-loading-sub hint"></p>
+            <div class="vc-loading-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+          </div>
+          <div id="vc-preview-idle" class="vc-preview-idle">
+            <audio id="vc-preview-audio" controls preload="metadata" class="vc-preview-audio"></audio>
+            <div class="btn-row btn-row-tight">
+              <a id="vc-download-link" class="btn-ghost btn-sm hidden" href="#" download>Indir</a>
+            </div>
+            <p id="vc-preview-meta" class="hint">Donusum sonrasi onizleme burada gorunur.</p>
+          </div>
+        </div>
+
+        <div class="vc-history-head">
+          <h3 class="section-title-xs">Uretilen kayitlar</h3>
+          <button type="button" id="btn-vc-refresh-history" class="btn-ghost btn-sm">Yenile</button>
+        </div>
+        <ul id="vc-history-list" class="vc-history-list">
+          <li class="hint">Henuz kayit yok.</li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- AYARLAR -->
+    <main class="view settings-view page-main" id="view-settings" hidden>
+      <div class="settings-head panel">
+        <div>
+          <h2 class="section-title-sm">Ayarlar</h2>
+          <p class="hint" id="settings-head-hint">Ollama, GPU ve ilk kurulum kontrolleri.</p>
+        </div>
+        <button type="button" id="btn-settings-refresh-all" class="btn-ghost hidden">Tum dosyalari kontrol et</button>
+      </div>
+
+      <nav class="settings-subtabs" role="tablist" aria-label="Ayarlar kataloglari">
+        <button type="button" class="settings-subtab active" data-settings-tab="system" role="tab" aria-selected="true">Sistem</button>
+        <button type="button" class="settings-subtab" data-settings-tab="api" role="tab" aria-selected="false">API'ler</button>
+        <button type="button" class="settings-subtab" data-settings-tab="telegram" role="tab" aria-selected="false">Telegram</button>
+        <button type="button" class="settings-subtab" data-settings-tab="hooks" role="tab" aria-selected="false">Hook</button>
+        <button type="button" class="settings-subtab" data-settings-tab="files" role="tab" aria-selected="false">Dosyalar</button>
+      </nav>
+
+      <div id="settings-panel-system" class="settings-subpanel settings-subpanel-active">
+      <section class="panel settings-card" id="settings-setup">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Sistem kurulumu</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" id="btn-setup-refresh">Durumu yenile</button>
+            <button type="button" class="btn-primary btn-sm" id="btn-setup-run">Kurulumu tamamla</button>
+          </div>
+        </div>
+        <p class="hint">Ollama servisini baslatir, LLM modelini indirir, GPU ve internet baglantisini kontrol eder. NVIDIA surucusu elle kurulmalidir.</p>
+        <ul class="setup-check-list" id="setup-check-list"></ul>
+        <p class="hint" id="setup-status-hint">Durum: yukleniyor…</p>
+      </section>
+
+      <section class="panel settings-card" id="settings-backup">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Veri yedegi</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" id="btn-backup-open-folder">Klasoru ac</button>
+            <button type="button" class="btn-primary btn-sm" id="btn-backup-create">Yedek al</button>
+          </div>
+        </div>
+        <p class="hint">Galeri, taslaklar, konu hafizasi ve kuyruk verilerini <code>data/backups/</code> altina zip olarak kaydeder. Uretim devam ederken de alinabilir.</p>
+        <p class="hint" id="backup-status-hint">Son yedek: henuz alinmadi.</p>
+        <ul class="setup-check-list" id="backup-list"></ul>
+      </section>
+
+      <section class="panel settings-card" id="settings-live-system">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Canli sistem</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" id="btn-live-system-refresh">Yenile</button>
+          </div>
+        </div>
+        <p class="hint">VRAM, disk, Ollama, motor motoru, kuyruk ve stok API kotasi — salt okunur.</p>
+        <p class="hint" id="live-system-updated">Guncelleniyor…</p>
+        <ul class="setup-check-list" id="live-system-list"></ul>
+      </section>
+      </div>
+
+      <div id="settings-panel-api" class="settings-subpanel" hidden>
+      <section class="panel settings-card" id="settings-llm-api">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">LLM API (senaryo / caption)</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" id="btn-llm-api-test">Test et</button>
+            <button type="button" class="btn-ghost btn-sm" id="btn-llm-api-save">Kaydet</button>
+          </div>
+        </div>
+        <p class="hint">Varsayilan: yerel Ollama. Istersen OpenAI, NVIDIA NIM, Gemini, Grok veya Claude anahtari ekle — senaryo ve caption ayni yoldan gider. Anahtarlar yalnizca bu PC'de saklanir.</p>
+        <div class="grid-2 lang-preset-grid">
+          <label>
+            <span>Saglayici</span>
+            <select id="llm-api-provider">
+              <option value="ollama">Ollama (yerel)</option>
+              <option value="openai">OpenAI</option>
+              <option value="nvidia">NVIDIA NIM</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="grok">xAI Grok</option>
+              <option value="claude">Anthropic Claude</option>
+            </select>
+          </label>
+          <label id="llm-api-model-wrap">
+            <span>Model</span>
+            <select id="llm-api-model"></select>
+          </label>
+        </div>
+        <div class="grid-2 lang-preset-grid" id="llm-api-keys-grid">
+          <label data-llm-key="openai">
+            <span>OpenAI API key</span>
+            <input type="password" id="llm-api-openai-key" autocomplete="off" placeholder="sk-…" />
+          </label>
+          <label data-llm-key="nvidia">
+            <span>NVIDIA API key</span>
+            <input type="password" id="llm-api-nvidia-key" autocomplete="off" placeholder="nvapi-…" />
+          </label>
+          <label data-llm-key="gemini">
+            <span>Gemini API key</span>
+            <input type="password" id="llm-api-gemini-key" autocomplete="off" placeholder="AIza…" />
+          </label>
+          <label data-llm-key="grok">
+            <span>Grok (xAI) API key</span>
+            <input type="password" id="llm-api-grok-key" autocomplete="off" placeholder="xai-…" />
+          </label>
+          <label data-llm-key="claude">
+            <span>Claude API key</span>
+            <input type="password" id="llm-api-claude-key" autocomplete="off" placeholder="sk-ant-…" />
+          </label>
+        </div>
+        <p class="hint" id="llm-api-status-hint">Durum: yukleniyor…</p>
+      </section>
+
+      <section class="panel settings-card" id="settings-minimax-h3">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">H3 Studio koprusu</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" id="btn-minimax-h3-start">Studio'yu baslat</button>
+            <button type="button" class="btn-ghost btn-sm" id="btn-minimax-h3-test">Test et</button>
+            <button type="button" class="btn-ghost btn-sm" id="btn-minimax-h3-save">Kaydet</button>
+          </div>
+        </div>
+        <p class="hint">Kapaliysa uretim sirasinda otomatik baslatilir (Pinokio <code>pterm</code>). Port dinamik olabilir — URL otomatik bulunur.</p>
+        <label class="toggle-row">
+          <input type="checkbox" id="minimax-h3-enabled" />
+          <span>Varsayilan: otomatik uretim acik (Uretim sekmesindeki tik ile de kontrol edilir)</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="minimax-h3-auto-start" checked />
+          <span>Studio kapaliysa otomatik baslat (onerilir)</span>
+        </label>
+        <div class="grid-2 lang-preset-grid">
+          <label>
+            <span>Studio URL</span>
+            <input type="text" id="minimax-h3-url" placeholder="http://127.0.0.1:8787" autocomplete="off" />
+          </label>
+          <label>
+            <span>Kalite</span>
+            <select id="minimax-h3-quality">
+              <option value="480">480</option>
+              <option value="608">608</option>
+              <option value="736" selected>736 (onerilen)</option>
+              <option value="768">768</option>
+              <option value="1088">1088</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint" id="minimax-h3-status-hint">Durum: yukleniyor…</p>
+      </section>
+
+      <section class="panel settings-card" id="settings-stock-api">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Stok video API (Pexels / Pixabay)</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" id="btn-stock-api-test">Test et</button>
+            <button type="button" class="btn-ghost btn-sm" id="btn-stock-api-save">Kaydet</button>
+          </div>
+        </div>
+        <p class="hint">Ucretsiz API anahtarini asagidaki rehberle al, buraya yapistir. Anahtarlar yalnizca bu bilgisayarda saklanir — kurulum paketine gitmez.</p>
+
+        <details class="accordion api-guide-accordion" id="stock-api-guide" open>
+          <summary class="accordion-summary">API anahtari nasil alinir?</summary>
+          <div class="api-guide-grid" id="stock-api-guide-body">
+            <div class="api-guide-block">
+              <h4>Pexels</h4>
+              <p class="hint">Ucretsiz: ~200 istek/saat, 20.000 istek/ay (anahtar basina)</p>
+              <p class="hint"><a href="https://www.pexels.com/api/new/" target="_blank" rel="noopener">Kayit / anahtar sayfasi</a> · <a href="https://www.pexels.com/api/documentation/" target="_blank" rel="noopener">Dokumantasyon</a></p>
+              <ol>
+                <li>pexels.com/api/new adresine git</li>
+                <li>Ucretsiz hesap olustur veya giris yap</li>
+                <li>Formu doldur (proje adi: AkiFactory / kisisel kullanim yeterli)</li>
+                <li>E-posta ile gelen API anahtarini kopyala</li>
+                <li>Asagidaki Pexels kutusuna yapistir → Kaydet → Test et</li>
+              </ol>
+            </div>
+            <div class="api-guide-block">
+              <h4>Pixabay</h4>
+              <p class="hint">Ucretsiz: ~100 istek / 60 saniye (anahtar basina)</p>
+              <p class="hint"><a href="https://pixabay.com/accounts/register/" target="_blank" rel="noopener">Kayit / anahtar sayfasi</a> · <a href="https://pixabay.com/api/docs/" target="_blank" rel="noopener">Dokumantasyon</a></p>
+              <ol>
+                <li>pixabay.com uzerinde ucretsiz hesap ac</li>
+                <li>pixabay.com/api/docs sayfasina git (giris yapili olmali)</li>
+                <li>Sayfanin ustundeki ornek kodda senin API anahtarin gorunur</li>
+                <li>Anahtari kopyala (rakam ve harfler, tireli uzun metin)</li>
+                <li>Pixabay kutusuna yapistir → Kaydet → Test et</li>
+              </ol>
+            </div>
+            <ul class="api-guide-notes">
+              <li>Her kullanici kendi ucretsiz anahtarini almali — paylasilan anahtar kota biter.</li>
+              <li>Anahtarlar yalnizca bu bilgisayarda data/api_keys.json icinde saklanir; kurulum paketine girmez.</li>
+              <li>Iki servis de ucretsiz; kredi karti gerekmez.</li>
+            </ul>
+          </div>
+        </details>
+
+        <div class="grid-2 lang-preset-grid">
+          <label>
+            <span>Pexels API key</span>
+            <input type="password" id="stock-api-pexels" autocomplete="off" placeholder="Pexels API" />
+          </label>
+          <label>
+            <span>Pixabay API key</span>
+            <input type="password" id="stock-api-pixabay" autocomplete="off" placeholder="Pixabay API" />
+          </label>
+        </div>
+        <p class="hint" id="stock-api-status-hint">Durum: yukleniyor…</p>
+        <p class="hint api-quota-hint" id="stock-api-quota-hint"></p>
+      </section>
+      </div>
+
+      <div id="settings-panel-telegram" class="settings-subpanel" hidden>
+      <section class="panel settings-card" id="settings-telegram">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Telegram bildirimleri</h3>
+        </div>
+        <p class="hint">Video veya kuyruk bitince telefonuna mesaj gelir. Ayarlar bu bilgisayarda saklanir — kurulum paketine gitmez.</p>
+
+        <details class="accordion api-guide-accordion" id="telegram-guide" open>
+          <summary class="accordion-summary">Telegram bot nasil kullanilir?</summary>
+          <div class="api-guide-grid" id="telegram-guide-body">
+            <p class="hint">Bildirim botu: <a id="telegram-guide-bot-link" href="https://t.me/AkiFactory_bot" target="_blank" rel="noopener">@AkiFactory_bot</a> · <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a> (yalnizca kendi botun icin)</p>
+            <div class="api-guide-block">
+              <h4>Hizli kurulum (paylasilan bot)</h4>
+              <ol>
+                <li>Telegram'da @AkiFactory_bot botunu ac (BotFather degil).</li>
+                <li>Bota /start yaz — bu adim zorunlu, yoksa mesaj gitmez.</li>
+                <li>Bot token kutusuna paylasilan bot token'ini yapistir → Kaydet (kendi botun varsa onun token'i).</li>
+                <li>Chat ID bul — senin Telegram kullanici ID'n otomatik gelir ve kaydedilir.</li>
+                <li>Test gonder ile telefonuna deneme mesaji dus.</li>
+              </ol>
+            </div>
+            <div class="api-guide-block">
+              <h4>Kendi botun (istege bagli)</h4>
+              <ol>
+                <li>Telegram'da @BotFather ac → /newbot ile yeni bot olustur.</li>
+                <li>Verilen token'i asagidaki Bot token kutusuna yapistir → Kaydet.</li>
+                <li>Kendi botuna /start yaz → Chat ID bul → Test gonder.</li>
+              </ol>
+            </div>
+            <div class="api-guide-block">
+              <h4>Baska birine bildirim (farkli kullanici)</h4>
+              <ol>
+                <li>Her kullanici kendi telefonundan bota /start yazmali.</li>
+                <li>O kisi kendi AkiFactory kurulumunda Chat ID bul yapar (veya ID'yi sana iletir).</li>
+                <li>Ayni bot token paylasilabilir; Chat ID kisi basina farklidir.</li>
+                <li>Senin Chat ID'n pakete gitmez — data/telegram.json yalnizca o PC'de kalir.</li>
+              </ol>
+            </div>
+            <div class="api-guide-block">
+              <h4>Ne zaman mesaj gelir?</h4>
+              <ul class="api-guide-notes">
+                <li>Her video hazir olunca (aciksa)</li>
+                <li>Uretim kuyrugu tamamen bitince (aciksa)</li>
+              </ul>
+            </div>
+            <ul class="api-guide-notes">
+              <li>BotFather'a /start yazma — bildirim botuna yaz.</li>
+              <li>Token ve Chat ID kurulum paketine dahil edilmez.</li>
+              <li>Bildirimler kapaliysa mesaj gonderilmez.</li>
+            </ul>
+          </div>
+        </details>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="telegram-enabled" checked />
+          <span>Bildirimler acik</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="telegram-notify-video" checked />
+          <span>Her video hazir olunca</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" id="telegram-notify-queue" checked />
+          <span>Kuyruk tamamen bitince</span>
+        </label>
+        <div class="grid-2 lang-preset-grid">
+          <label>
+            <span>Bot token</span>
+            <input type="password" id="telegram-bot-token" autocomplete="off" placeholder="Paylasilan veya kendi bot token" />
+          </label>
+          <label>
+            <span>Chat ID</span>
+            <input type="text" id="telegram-chat-id" placeholder="Chat ID bul ile otomatik" />
+          </label>
+        </div>
+
+        <div class="settings-action-bar">
+          <p class="settings-action-hint" id="telegram-action-hint">Once bota /start yaz, sonra Chat ID bul.</p>
+          <div class="settings-actions settings-actions-primary">
+            <a class="btn-ghost btn-sm btn-link-external hidden" id="btn-telegram-open-bot" href="#" target="_blank" rel="noopener">Botu Telegram'da ac</a>
+            <button type="button" class="btn-primary btn-sm" id="btn-telegram-save">Kaydet</button>
+            <button type="button" class="btn-ghost btn-sm" id="btn-telegram-discover">1. Chat ID bul</button>
+            <button type="button" class="btn-ghost btn-sm" id="btn-telegram-test" disabled>2. Test gonder</button>
+          </div>
+        </div>
+        <p class="hint settings-status-line" id="telegram-status-hint">Durum: yukleniyor…</p>
+      </section>
+      </div>
+
+      <div id="settings-panel-hooks" class="settings-subpanel" hidden>
+      <section class="panel settings-card" id="settings-hooks">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Hook ornekleri</h3>
+        </div>
+        <p class="hint">Nis sec, guzel acilis cumleleri ekle. <strong>Iyi / Kotu</strong> secince ornek hafizaya gider, yerine LLM yeni hook uretir.</p>
+
+        <label>
+          <span>Kategori (nis)</span>
+          <select id="hooks-niche-select">
+            <option value="tarih_gizem">Yukleniyor…</option>
+          </select>
+        </label>
+
+        <div class="hooks-compose">
+          <button type="button" class="btn-ghost btn-sm" id="btn-hooks-compose-open">+ Ekle</button>
+          <div id="hooks-compose-form" class="hooks-compose-form hidden">
+            <label class="hooks-add-field">
+              <span>Yeni hook</span>
+              <textarea id="hooks-new-text" rows="3" placeholder="Orn: 1912'de Titanik battiktan sonra batarya kutulari hala sinyal gonderiyordu." maxlength="500"></textarea>
+            </label>
+            <div class="hooks-compose-actions">
+              <button type="button" class="btn-primary btn-sm" id="btn-hooks-save">Kaydet</button>
+              <button type="button" class="btn-ghost btn-sm" id="btn-hooks-cancel">Iptal</button>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="hooks-subtitle">Ornekler</h4>
+        <ul class="hooks-list" id="hooks-examples-list">
+          <li class="hint">Yukleniyor…</li>
+        </ul>
+
+        <h4 class="hooks-subtitle">LLM hafizasi</h4>
+        <p class="hint hooks-memory-hint">Iyi hooklari guclendirir, kotu olanlari tekrar etmez. Ornek satirindan veya otomatik uretimden dolar.</p>
+        <div class="hooks-memory-grid">
+          <div class="hooks-memory-col">
+            <h5 class="hooks-memory-title ok">Iyi</h5>
+            <ul class="hooks-list hooks-memory-list" id="hooks-memory-good"></ul>
+          </div>
+          <div class="hooks-memory-col">
+            <h5 class="hooks-memory-title bad">Kotu</h5>
+            <ul class="hooks-list hooks-memory-list" id="hooks-memory-bad"></ul>
+          </div>
+        </div>
+        <p class="hint" id="hooks-status-hint"></p>
+      </section>
+      </div>
+
+      <div id="settings-panel-files" class="settings-subpanel" hidden>
+      <p class="hint settings-panel-intro">RVC ses, arka plan muzigi ve kanal intro / outrolari. <strong>Yukle</strong> dugmesiyle ekle — kod veya klasor islemi gerekmez. Klasore elle attiysan <strong>Kontrol et</strong>.</p>
+      <section class="panel settings-card" id="settings-rvc">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">RVC ses modelleri</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" data-open-folder="rvc">Klasoru ac</button>
+            <button type="button" class="btn-ghost btn-sm" data-refresh-section="rvc">Kontrol et</button>
+          </div>
+        </div>
+        <p class="hint settings-instructions" id="settings-rvc-instructions"></p>
+        <div class="settings-upload-row">
+          <input type="text" id="upload-rvc-name" placeholder="Ses adi (or. Anlatici Erkek)" autocomplete="off" />
+          <label class="settings-upload-pitch" title="Ses perdesi: erkek→kadin icin +12, kadin→erkek icin -12">
+            <span>Pitch</span>
+            <input type="number" id="upload-rvc-pitch" value="0" min="-24" max="24" step="1" />
+          </label>
+          <button type="button" class="btn-primary btn-sm" data-upload-pick="rvc">Model yukle</button>
+          <input type="file" id="upload-rvc-file" accept=".zip,.pth,.index" multiple hidden />
+        </div>
+        <p class="settings-path-label">Dosyalari buraya at:</p>
+        <code class="settings-path" id="settings-rvc-path"></code>
+        <p class="hint settings-example" id="settings-rvc-example"></p>
+        <p class="settings-count" id="settings-rvc-count"></p>
+        <ul class="settings-file-list" id="settings-rvc-list"></ul>
+      </section>
+
+      <section class="panel settings-card" id="settings-bgm">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Arka plan muzigi</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" data-open-folder="bgm">Klasoru ac</button>
+            <button type="button" class="btn-ghost btn-sm" data-refresh-section="bgm">Kontrol et</button>
+          </div>
+        </div>
+        <p class="hint settings-instructions" id="settings-bgm-instructions"></p>
+        <div class="settings-upload-row">
+          <select id="upload-bgm-category" aria-label="Muzigin nisi"></select>
+          <button type="button" class="btn-primary btn-sm" data-upload-pick="bgm">Muzik yukle</button>
+          <input type="file" id="upload-bgm-file" accept=".mp3,.wav,.m4a,.aac,.ogg,.flac,audio/*" multiple hidden />
+        </div>
+        <p class="settings-path-label">Dosyalari buraya at:</p>
+        <code class="settings-path" id="settings-bgm-path"></code>
+        <p class="hint settings-example" id="settings-bgm-example"></p>
+        <p class="settings-count" id="settings-bgm-count"></p>
+        <ul class="settings-file-list" id="settings-bgm-list"></ul>
+      </section>
+
+      <section class="panel settings-card" id="settings-outros">
+        <div class="settings-card-head">
+          <h3 class="section-title-xs">Kanal intro / outro</h3>
+          <div class="settings-actions">
+            <button type="button" class="btn-ghost btn-sm" data-open-folder="outros">Klasoru ac</button>
+            <button type="button" class="btn-ghost btn-sm" data-refresh-section="outros">Kontrol et</button>
+          </div>
+        </div>
+        <p class="hint settings-instructions" id="settings-outros-instructions"></p>
+        <div class="settings-upload-row">
+          <input type="text" id="upload-channel-name" list="upload-channel-list" placeholder="Kanal adi (or. Tarih Gizem YT)" autocomplete="off" />
+          <datalist id="upload-channel-list"></datalist>
+          <button type="button" class="btn-primary btn-sm" data-upload-pick="intro">Intro yukle</button>
+          <button type="button" class="btn-primary btn-sm" data-upload-pick="outro">Outro yukle</button>
+          <input type="file" id="upload-channel-file" accept=".mp4,.mov,.webm,.mkv,video/*" hidden />
+        </div>
+        <p class="settings-path-label">Dosyalari buraya at:</p>
+        <code class="settings-path" id="settings-outros-path"></code>
+        <p class="hint settings-example" id="settings-outros-example"></p>
+        <p class="settings-count" id="settings-outros-count"></p>
+        <ul class="settings-file-list" id="settings-outros-list"></ul>
+      </section>
+      </div>
+    </main>
+
+    <!-- GALERI -->
+    <main class="view gallery-view page-main" id="view-gallery" hidden>
+      <div class="gallery-stats" id="gallery-stats">
+        <div class="stat-card"><span class="stat-icon">📹</span><span class="stat-num" id="stat-total">0</span><span class="stat-label">Toplam Video</span></div>
+        <div class="stat-card"><span class="stat-icon">📅</span><span class="stat-num" id="stat-month">0</span><span class="stat-label">Bu Ay</span></div>
+        <div class="stat-card"><span class="stat-icon">💾</span><span class="stat-num" id="stat-size">0</span><span class="stat-label">Toplam Boyut (MB)</span></div>
+      </div>
+      <div class="gallery-head panel">
+        <div>
+          <h2 class="section-title-sm">Galeri</h2>
+          <p class="hint">Kisa videolar ve uzun video montaj paketleri burada kalir.</p>
+        </div>
+        <div class="gallery-type-tabs" role="tablist">
+          <button type="button" class="gallery-type-tab active" id="gallery-tab-short" data-gallery-mode="short" role="tab" aria-selected="true">Kisa videolar</button>
+          <button type="button" class="gallery-type-tab" id="gallery-tab-long" data-gallery-mode="long" role="tab" aria-selected="false">Uzun videolar</button>
+        </div>
+        <div class="gallery-filters">
+          <select id="gallery-filter-platform">
+            <option value="">Tum platformlar</option>
+            <option value="tiktok">TikTok</option>
+            <option value="youtube_shorts">YouTube Shorts</option>
+            <option value="instagram_reels">Instagram Reels</option>
+          </select>
+          <select id="gallery-filter-niche">
+            <option value="">Tum nisler</option>
+          </select>
+          <button type="button" id="btn-gallery-select-all" class="btn-ghost">Tumunu sec</button>
+          <button type="button" id="btn-gallery-bulk-delete" class="danger" disabled>Secilenleri sil</button>
+          <button type="button" id="btn-refresh-gallery" class="btn-ghost">Yenile</button>
+        </div>
+      </div>
+      <div id="gallery-grid" class="gallery-grid">
+        <p class="gallery-empty">Henuz galeride video yok. Uretim sekmesinden bir video olustur.</p>
+      </div>
+    </main>
+
+    <!-- ANALIZ -->
+    <main class="view analyze-view page-main" id="view-analyze" hidden>
+      <div class="layout analyze-layout">
+        <section class="panel form-panel analyze-form-panel">
+          <h2 class="section-title-sm">Istatistik Analizi</h2>
+          <p class="hint">
+            Galeriden videoyu sec (hangi videoya ait oldugu belli olsun), YouTube Studio
+            ekran goruntusunu yukle. Video analiz edilmez — yalnizca istatistikler okunur.
+          </p>
+
+          <label>
+            <span>1 — Galeri videosu</span>
+            <select id="analyze-gallery-select">
+              <option value="">Yukleniyor…</option>
+            </select>
+          </label>
+          <p id="analyze-video-meta" class="hint analyze-video-meta">Hangi videonun istatistigi oldugunu secmek icin listeden sec.</p>
+          <div class="btn-row btn-row-tight">
+            <button type="button" id="btn-analyze-refresh-videos" class="btn-ghost btn-sm">Videolari yenile</button>
+          </div>
+
+          <label class="analyze-file-label">
+            <span>2 — YouTube Studio ekran goruntusu (en fazla 3)</span>
+            <input type="file" id="analyze-image-files" accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.png,.webp" multiple />
+          </label>
+          <p id="analyze-image-hint" class="hint">
+            Video analizi → Genel bakis, Erisim veya Etkilesim sekmesinin ekran goruntusunu at.
+          </p>
+          <div id="analyze-image-preview" class="analyze-image-preview analyze-image-preview-studio hidden"></div>
+
+          <label>
+            <span>Ek not (opsiyonel)</span>
+            <textarea id="analyze-image-note" rows="2" placeholder="Orn: Videonun 2. gunu, retention henuz yok"></textarea>
+          </label>
+
+          <label>
+            <span>Vision model</span>
+            <select id="analyze-vision-model">
+              <option value="">Yukleniyor…</option>
+            </select>
+          </label>
+          <p id="analyze-vision-hint" class="hint hidden">
+            Vision model yok — Ayarlar → Sistem bolumunden kurulabilir.
+          </p>
+
+          <div class="btn-row">
+            <button type="button" id="btn-analyze-run" class="btn-primary">Istatistikleri analiz et</button>
+          </div>
+          <p id="analyze-status" class="status-msg"></p>
+        </section>
+
+        <section class="panel out-panel analyze-out-panel">
+          <h2 class="section-title-sm">Editor raporu</h2>
+          <p id="analyze-summary" class="analyze-summary hint">Henuz analiz yok.</p>
+
+          <div id="analyze-sections" class="analyze-sections hidden">
+            <div class="analyze-block">
+              <h3 class="section-title-xs analyze-block-title ok">Guclu yanlar</h3>
+              <ul id="analyze-strengths" class="analyze-list"></ul>
+            </div>
+            <div class="analyze-block">
+              <h3 class="section-title-xs analyze-block-title warn">Zayif yanlar</h3>
+              <ul id="analyze-weaknesses" class="analyze-list"></ul>
+            </div>
+            <div class="analyze-block">
+              <h3 class="section-title-xs analyze-block-title">Istatistik yorumu</h3>
+              <ul id="analyze-stats-insights" class="analyze-list"></ul>
+            </div>
+            <div class="analyze-block">
+              <h3 class="section-title-xs analyze-block-title accent">Oneriler (AkiFactory)</h3>
+              <ul id="analyze-recommendations" class="analyze-list"></ul>
+            </div>
+            <div class="analyze-block">
+              <h3 class="section-title-xs analyze-block-title">Sonraki videoda dene</h3>
+              <ul id="analyze-next-video" class="analyze-list"></ul>
+            </div>
+          </div>
+
+          <details class="accordion analyze-raw-wrap hidden" id="analyze-raw-wrap">
+            <summary>Tam rapor metni</summary>
+            <div class="accordion-body">
+              <pre id="analyze-raw" class="analyze-raw"></pre>
+              <button type="button" id="btn-analyze-copy-raw" class="btn-ghost btn-sm">Kopyala</button>
+            </div>
+          </details>
+
+          <div class="analyze-history-head">
+            <h3 class="section-title-xs">Gecmis analizler</h3>
+            <button type="button" id="btn-analyze-refresh-history" class="btn-ghost btn-sm">Yenile</button>
+          </div>
+          <ul id="analyze-history-list" class="analyze-history-list">
+            <li class="hint">Henuz kayit yok.</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+
+    <footer class="foot footer">
+      <div class="footer-container">
+        <p class="footer-copyright">Akiyom · AkiFactory</p>
+        <p class="footer-meta">Ollama · Pexels · Pixabay</p>
+      </div>
+    </footer>
+  </div>
+
+  <div id="script-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-panel">
+      <h3>Senaryo</h3>
+      <p class="hint">Kendin yaz veya <strong>Editor ile uret</strong> ile yapay zekaya yazdir.</p>
+      <div class="script-editor-wrap" id="script-editor-wrap">
+        <textarea id="script-preview-text" rows="10" placeholder="Senaryo metnini buraya yaz..."></textarea>
+        <div id="script-loading" class="script-loading hidden" aria-live="polite" aria-busy="false">
+          <div class="script-loading-spinner" aria-hidden="true"></div>
+          <p id="script-loading-text" class="script-loading-text">Senaryo uretiliyor...</p>
+          <p id="script-loading-sub" class="script-loading-sub hint"></p>
+        </div>
+      </div>
+      <p id="script-meta" class="hint"></p>
+      <p id="script-hook-preview" class="hook-preview"></p>
+      <div class="modal-actions">
+        <button type="button" id="btn-editor-script" class="btn-ghost">Editor ile uret</button>
+        <button type="button" id="btn-use-script" class="btn-primary">Bu senaryoyla videoyu uret</button>
+        <button type="button" class="btn-ghost" data-close-modal>Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gallery-detail-modal" class="modal hidden gallery-detail-modal" role="dialog" aria-modal="true" aria-labelledby="gallery-detail-title">
+    <div class="modal-backdrop" data-close-gallery-detail></div>
+    <div class="modal-panel gallery-detail-panel">
+      <button type="button" class="modal-close" id="btn-gallery-detail-close" aria-label="Kapat">&times;</button>
+      <div class="gallery-detail-head">
+        <h3 id="gallery-detail-title">Video detaylari</h3>
+        <p class="hint" id="gallery-detail-subtitle"></p>
+      </div>
+      <div class="gallery-detail-body" id="gallery-detail-body"></div>
+      <div class="modal-actions gallery-detail-actions">
+        <button type="button" class="btn-ghost" id="btn-gallery-open-folder">Klasorde ac</button>
+        <button type="button" class="btn-ghost" id="btn-gallery-detail-copy-all">Tum metinleri kopyala</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Eski app.js + WebView2 onbellegi: tum /api/ yanitlari guvenli JSON veya Turkce hata */
+    (function () {
+      function parseApiText(text, status) {
+        if (!String(text || "").trim()) return {};
+        try {
+          return JSON.parse(text);
+        } catch (err) {
+          var snippet = String(text).trim().replace(/\s+/g, " ").slice(0, 180);
+          throw new Error(
+            "Sunucu JSON yerine metin dondurdu (HTTP " + status + "): " + snippet
+          );
+        }
+      }
+
+      Response.prototype.json = function () {
+        var self = this;
+        return this.clone().text().then(function (text) {
+          return parseApiText(text, self.status);
+        });
+      };
+
+      var nativeFetch = window.fetch.bind(window);
+      window.fetch = function () {
+        var args = arguments;
+        var req = args[0];
+        var url = typeof req === "string" ? req : req && req.url ? req.url : "";
+        return nativeFetch.apply(void 0, args).then(function (res) {
+          if (String(url).indexOf("/api/") === -1) return res;
+          return res.clone().text().then(function (text) {
+            var parsed = parseApiText(text, res.status);
+            var wrapped = new Response(text, {
+              status: res.status,
+              statusText: res.statusText,
+              headers: res.headers,
+            });
+            wrapped.json = function () {
+              return Promise.resolve(parsed);
+            };
+            wrapped.text = function () {
+              return Promise.resolve(text);
+            };
+            Object.defineProperty(wrapped, "ok", { get: function () { return res.ok; } });
+            Object.defineProperty(wrapped, "status", { get: function () { return res.status; } });
+            Object.defineProperty(wrapped, "statusText", { get: function () { return res.statusText; } });
+            return wrapped;
+          });
+        });
+      };
+    })();
+  </script>
+  <script src="/assets/i18n.js?v=2.8.29"></script>
+  <script src="/assets/app.js?v=2.8.30"></script>
+</body>
+</html>

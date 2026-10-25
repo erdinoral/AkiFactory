@@ -1,0 +1,234 @@
+/* AkiFactory başlangıç ekranı — tarayıcı / gelecek entegrasyon */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
+
+:root {
+  --bg: #0a0a0c;
+  --fg: #e8e8ec;
+  --muted: #6b6b78;
+  --accent: #00d4ff;
+  --accent2: #7c3aed;
+  --trough: #1a1a22;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.splash-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+  animation: drift 8s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 280px;
+  height: 280px;
+  background: var(--accent2);
+  top: -80px;
+  left: -60px;
+}
+
+.orb-2 {
+  width: 220px;
+  height: 220px;
+  background: var(--accent);
+  bottom: -40px;
+  right: -40px;
+  animation-delay: -3s;
+}
+
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.25;
+  animation: scan 3.5s linear infinite;
+}
+
+.splash-card {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem 2.5rem;
+  text-align: center;
+}
+
+.logo-wrap {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 1rem;
+}
+
+.logo-img {
+  position: absolute;
+  inset: 12px;
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  z-index: 3;
+  animation: float 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px rgba(0, 212, 255, 0.35));
+}
+
+.logo-glow {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.2), transparent 70%);
+  animation: pulse-glow 2.2s ease-in-out infinite;
+  z-index: 1;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  z-index: 0;
+}
+
+.ring-1 {
+  border-color: rgba(0, 212, 255, 0.45);
+  animation: ring-pulse 2.4s ease-out infinite;
+}
+
+.ring-2 {
+  border-color: rgba(124, 58, 237, 0.4);
+  animation: ring-pulse 2.4s ease-out infinite 0.8s;
+}
+
+.splash-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.splash-title .accent {
+  color: var(--accent);
+}
+
+.splash-tag {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.splash-status {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--fg);
+  min-height: 1.25rem;
+}
+
+.progress-track {
+  margin-top: 0.75rem;
+  width: min(320px, 88vw);
+  height: 8px;
+  background: var(--trough);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.splash-legal {
+  margin-top: 1.25rem;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.splash-legal p {
+  margin: 0;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes ring-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(24px, 16px);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.35;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}

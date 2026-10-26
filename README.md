@@ -1,97 +1,81 @@
 # AkiFactory
 
-**Windows public preview · Pinokio launcher included**
+**Windows public preview · One-click setup with Pinokio**
 
-Turn a topic into a vertical short video with stock footage, narration, subtitles
-and a finished edit. Turkish-first, with multilingual production options.
-Choose automatic stock production or prepare separate assets for manual editing.
-Optional local Qwen-Image covers are generated without text; the video title is
-then typeset with a real font to preserve Turkish characters.
+Turn a topic into a vertical short video with stock footage, narration, subtitles and a finished edit. Create content for YouTube Shorts, TikTok and Instagram Reels with multilingual production options.
+
+- **Automatic production:** use Pexels, Pixabay or both.
+- **Manual editing:** prepare separate narration, subtitles, music and source clips.
+- **Optional AI covers:** Qwen-Image creates text-free artwork; real fonts add your title.
+- **Gallery:** keep finished videos, covers and publishing text together.
+- **Interface:** English by default. Switch to Turkish anytime; your choice is remembered.
 
 ## Install with Pinokio
 
-Download this repository in Pinokio:
-**https://github.com/erdinoral/AkiFactory**
+Download **https://github.com/erdinoral/AkiFactory** in Pinokio.
 
-1. Select **Kur / Onar** (Install / Repair).
-2. Select **Başlat** (Start).
-3. In Settings, configure your stock API keys and an LLM connection. Use Ollama
-   for local text generation or configure one of the supported API providers.
-4. Optionally install the AI cover engine and enable automatic covers.
-
-Windows 10/11 x64 is supported by this launcher. Stock search and Edge TTS need
-internet. AI covers require NVIDIA CUDA and a separate model download of about
-30 GB; allow at least 50 GB of free space. RVC voices and your personal music
-library are not included. The preview has been tested on the development machine;
-fresh-machine installation may still need fixes. Report issues with platform,
-GPU and error details, without including API keys.
+1. Select **Install / Repair**.
+2. Select **Start**, then **Open AkiFactory**.
+3. In **Settings**, configure your stock API keys and an LLM connection. Use Ollama for local text generation or a supported API provider.
+4. Optionally select **Install AI cover engine (optional)** and enable automatic covers.
 
 See [Pinokio setup and API examples](README-PINOKIO.md).
 
-Türkçe odaklı kısa dikey video stüdyosu (YouTube Shorts, TikTok, Instagram Reels).
+## Requirements
 
-**Tek giriş:** `AkiFactory.bat` → Electron penceresi + arka planda Python motoru.
+- Windows 10/11 x64.
+- Internet for stock search, downloads and Edge TTS.
+- Ollama with a text model, or a supported LLM API connection.
+- Optional AI covers: NVIDIA CUDA, about 30 GB of model downloads and at least 50 GB of free space.
+- Optional RVC: supply your own voice models. Personal voices and music libraries are not included.
 
-Pinokio başlatıcısı ve kurulum: [README-PINOKIO.md](README-PINOKIO.md).
+The preview has been tested on the development machine. Fresh-machine installation may still need fixes. Report your Windows version, GPU and error details without API keys or private files.
 
-## Gereksinimler
+## Standalone desktop launch
 
-- Windows 10/11
-- Python 3.11 veya 3.12 (ilk açılışta `.venv` otomatik)
-- [Node.js](https://nodejs.org/) (Electron)
-- [Ollama](https://ollama.com) — `ollama serve` + model (`ollama pull qwen3.5:9b`) veya Ayarlar'dan bulut LLM anahtarı
-- İnternet (Edge TTS, Pexels / Pixabay)
-- İsteğe bağlı: NVIDIA GPU (Whisper CUDA, NVENC, yerel TTS)
-
-## Başlatma
+Install Python 3.11 or 3.12 and [Node.js](https://nodejs.org/), then run:
 
 ```bat
 AkiFactory.bat
 ```
 
-İlk açılış 2–5 dk sürebilir (pip, Whisper, Electron npm). Sonraki açılışlar daha hızlıdır.
+The first launch prepares the Python environment and desktop dependencies. Pinokio opens the web interface directly and does not require Electron.
 
-## Proje yapısı
+For local text generation, install [Ollama](https://ollama.com) and a model:
 
+```sh
+ollama serve
+ollama pull qwen3.5:9b
 ```
+
+## Project layout
+
+```text
 AkiFactory/
-├── AkiFactory.bat          ← tek başlatıcı
-├── electron/               ← masaüstü kabuk (Electron)
-├── web/                    ← arayüz (HTML, CSS, JS)
-├── src/akifactory/         ← FastAPI arayüz + üretim mantığı
-│   └── engine/             ← video motoru
-├── scripts/                ← kurulum ve yardımcı scriptler
-├── models/                 ← whisper, chatterbox, rvc modelleri
-├── resource/               ← fontlar, BGM
-├── data/                   ← galeri, geçmiş, ayarlar, motor çıktıları (git'e girmez)
-└── assets/                 ← logo, ikon
+├── AkiFactory.bat       # Standalone desktop launcher
+├── pinokio.js          # Pinokio menu
+├── install.js          # Installation and repair
+├── start.js            # Pinokio launch
+├── electron/           # Desktop shell
+├── web/                # Web interface
+├── src/akifactory/     # API and video engine
+├── scripts/            # Setup and utilities
+├── models/             # Local model files
+├── resource/           # Fonts and music
+├── data/               # Local gallery, settings and outputs
+└── assets/             # Application branding
 ```
 
-## Portlar
+## Local services
 
-| Servis | Adres |
-|--------|--------|
-| Arayüz (FastAPI) | `http://127.0.0.1:7860+` |
-| Video motoru | `http://127.0.0.1:8080+` |
-| Ollama | `http://127.0.0.1:11434` |
+The interface starts at `http://127.0.0.1:7860` and the engine at `http://127.0.0.1:8080`. Occupied ports are skipped automatically. Ollama normally uses `http://127.0.0.1:11434`.
 
-## API anahtarları
+## API keys and privacy
 
-Pexels, Pixabay ve LLM anahtarları uygulama içinden (Ayarlar) girilir ve yalnızca bu bilgisayarda
-`data/api_keys.json` / `data/llm_settings.json` dosyalarında saklanır. Bu dosyalar git'e girmez.
+Enter credentials in **Settings**. Personal configuration is stored locally in `data/api_keys.json` and `data/llm_settings.json`. These files, generated videos, model weights and logs are excluded from Git. Never attach private configuration to issue reports.
 
-## Geliştirici komutları (opsiyonel)
+## Updates and recovery
 
-| Komut | Açıklama |
-|-------|----------|
-| `python scripts/bootstrap.py --kur` | Tam kurulum tekrar |
-| `python scripts/bootstrap.py --guncelle` | AkiFactory `git pull` + bağımlılıklar |
-| `python scripts/bootstrap.py --chatterbox` | Chatterbox (yerel TR taban) |
-| `python scripts/bootstrap.py --rvc` | RVC paketi |
-| `cd electron && npm start` | Electron (AkiFactory.bat ile aynı) |
+Finish all generations before using **Update**. **Reset Python environment** backs up the environment and preserves videos, models and API keys; select **Install / Repair** afterward.
 
-## Lisans
-
-AkiFactory kodu proje sahibine aittir. Video motoru başlangıçta
-[MoneyPrinterTurbo](https://github.com/harry0703/MoneyPrinterTurbo) (MIT) kodundan türetilmiştir;
-MIT lisansının gerektirdiği telif bildirimi `LICENSE-engine-upstream.txt` dosyasındadır.
+Third-party license notices are included in the repository.

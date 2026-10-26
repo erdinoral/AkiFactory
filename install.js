@@ -11,7 +11,7 @@ module.exports = {
         "uv pip install --python .venv/Scripts/python.exe -r requirements.txt",
         "uv pip install --python .venv/Scripts/python.exe --no-deps -e .",
         "uv pip install --python .venv/Scripts/python.exe git+https://github.com/emres/turkish-deasciifier.git",
-        ".venv/Scripts/python.exe scripts/pinokio_prepare.py"
+        ".venv\\Scripts\\python.exe scripts/pinokio_prepare.py"
       ]
     } }
   ]

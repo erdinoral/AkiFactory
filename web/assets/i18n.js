@@ -227,6 +227,17 @@
 
   window.akiI18n = { setLang: setLang, getLang: function () { return lang; }, t: t };
 
+  // Native dialogs are outside the DOM and cannot be translated by the observer.
+  ["alert", "confirm", "prompt"].forEach(function (name) {
+    var original = window[name];
+    if (typeof original !== "function") return;
+    window[name] = function (message) {
+      var args = Array.prototype.slice.call(arguments);
+      args[0] = t(String(message));
+      return original.apply(window, args);
+    };
+  });
+
   function init() {
     document.querySelectorAll(".ios-lang-switch").forEach(function (w) {
       w.addEventListener("click", function (e) {

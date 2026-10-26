@@ -1,4 +1,30 @@
 // Reference: examples/mochi/pinokio.js dynamic installation/running menus.
+const fs = require("fs");
+const path = require("path");
+const http = require("http");
+
+// A junction can make Pinokio's script status use a different root path.
+// Only expose a saved loopback port after confirming the AkiFactory API.
+async function activeUrl() {
+  let port;
+  try { port = Number(fs.readFileSync(path.join(__dirname, ".aki_ui_port"), "utf8").trim()); }
+  catch { return null; }
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return null;
+  const url = `http://127.0.0.1:${port}`;
+  return new Promise((resolve) => {
+    const req = http.get(`${url}/api/version`, (res) => {
+      let body = "";
+      res.on("data", (chunk) => { body += chunk; });
+      res.on("end", () => {
+        try { resolve(res.statusCode === 200 && JSON.parse(body).api_json_safe ? url : null); }
+        catch { resolve(null); }
+      });
+      res.on("error", () => resolve(null));
+    });
+    req.setTimeout(1000, () => { req.destroy(); resolve(null); });
+    req.on("error", () => resolve(null));
+  });
+}
 module.exports = {
   version: "8.0",
   title: "AkiFactory",
@@ -9,11 +35,13 @@ module.exports = {
     for (const [file, label] of [["install.js", "Installing"], ["update.js", "Updating"], ["reset.js", "Resetting environment"], ["cover-install.js", "Installing AI cover engine"]]) {
       if (info.running(file)) return [{ default: true, icon: "fa-solid fa-terminal", text: label, href: file }];
     }
-    if (info.running("start.js")) {
+    const liveUrl = await activeUrl();
+    if (info.running("start.js") || liveUrl) {
       const local = info.local("start.js");
+      const url = liveUrl || local?.url;
       return [
-        ...(local?.url ? [{ default: true, icon: "fa-solid fa-rocket", text: "Open AkiFactory", href: local.url }] : []),
-        { default: !local?.url, icon: "fa-solid fa-terminal", text: "Terminal", href: "start.js" }
+        ...(url ? [{ default: true, icon: "fa-solid fa-rocket", text: "Open AkiFactory", href: url }] : []),
+        { default: !url, icon: "fa-solid fa-terminal", text: "Terminal", href: "start.js" }
       ];
     }
     const installed = info.exists(".venv/Scripts/python.exe") && info.exists(".aki_pinokio_installed");

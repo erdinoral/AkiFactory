@@ -10,7 +10,7 @@
   var dict = null;
   // "Bu niste {0} konu..." gibi sablon anahtarlari (app.js `${n}` metinleri)
   var templates = [];
-  var lang = localStorage.getItem(KEY) === "en" ? "en" : "tr";
+  var lang = localStorage.getItem(KEY) === "tr" ? "tr" : "en";
   var textRec = new WeakMap();
   var attrRec = new WeakMap();
   var observer = null;

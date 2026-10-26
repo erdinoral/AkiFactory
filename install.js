@@ -8,10 +8,10 @@ module.exports = {
     { method: "shell.run", params: {
       path: ".", venv: ".venv", env: { PYTHONUTF8: "1" },
       message: [
-        "uv pip install -r requirements.txt",
-        "uv pip install --no-deps -e .",
-        "uv pip install git+https://github.com/emres/turkish-deasciifier.git",
-        "python scripts/pinokio_prepare.py"
+        "uv pip install --python .venv/Scripts/python.exe -r requirements.txt",
+        "uv pip install --python .venv/Scripts/python.exe --no-deps -e .",
+        "uv pip install --python .venv/Scripts/python.exe git+https://github.com/emres/turkish-deasciifier.git",
+        ".venv/Scripts/python.exe scripts/pinokio_prepare.py"
       ]
     } }
   ]

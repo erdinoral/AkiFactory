@@ -2,7 +2,7 @@
 module.exports = {
   run: [
     { method: "shell.run", params: {
-      path: ".", venv: ".venv", message: "python scripts/pinokio_prepare.py --reset"
+      path: ".", venv: ".venv", message: ".venv/Scripts/python.exe scripts/pinokio_prepare.py --reset"
     } }
   ]
 };

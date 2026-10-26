@@ -1,6 +1,8 @@
 """Pinokio entry point; reuse this folder's running UI without a second engine."""
 from __future__ import annotations
 import sys
+import os
+import subprocess
 import time
 from pathlib import Path
 from urllib.request import urlopen
@@ -26,6 +28,16 @@ def existing_url():
 
 
 def main():
+    # Activation scripts can retain an old absolute path after moving a venv.
+    # Do not let Pinokio's Conda/base Python start the engine in that case.
+    python = ROOT / ".venv" / "Scripts" / "python.exe"
+    if not python.is_file():
+        print("AkiFactory Python ortami bulunamadi. Pinokio: Kur / Onar.", flush=True)
+        return 1
+    if not os.path.samefile(sys.executable, python):
+        env = dict(os.environ)
+        env.pop("PYTHONHOME", None)
+        return subprocess.call([str(python), str(Path(__file__).resolve())], cwd=ROOT, env=env)
     url = existing_url()
     if url:
         print(f"AKIFACTORY_READY {url}", flush=True)

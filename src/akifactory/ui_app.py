@@ -1801,6 +1801,35 @@ def create_app() -> FastAPI:
         media = "audio/wav" if path.suffix.lower() == ".wav" else "audio/mpeg"
         return FileResponse(path, media_type=media, filename=safe)
 
+    @app.get("/api/voicestudio/status")
+    async def voicestudio_status():
+        from akifactory import voicestudio_bridge as vs
+
+        return await asyncio.to_thread(vs.status_dict)
+
+    @app.post("/api/voicestudio/select")
+    async def voicestudio_select(body: dict[str, Any]):
+        from akifactory import voicestudio_bridge as vs
+
+        pid = str(body.get("profile_id") or "").strip()
+        if not pid:
+            raise HTTPException(400, "profile_id gerekli")
+        vs.write_settings(profile_id=pid)
+        if body.get("tempo") is not None:
+            vs.set_profile_tempo(pid, body.get("tempo"))
+        return {"ok": True, "profile_id": pid, "tempo": vs.profile_tempo(pid)}
+
+    @app.post("/api/voicestudio/start")
+    async def voicestudio_start():
+        from akifactory import voicestudio_bridge as vs
+
+        if not vs.is_installed():
+            raise HTTPException(404, "VoiceStudio kurulu degil")
+        url = await asyncio.to_thread(vs.ensure_url)
+        if not url:
+            raise HTTPException(503, "VoiceStudio baslatilamadi — Pinokio'dan Start deneyin")
+        return await asyncio.to_thread(vs.status_dict)
+
     @app.get("/api/chatterbox/status")
     async def chatterbox_status():
         from akifactory.chatterbox_util import status_dict

@@ -79,21 +79,16 @@ def tokenize_keep(text: str) -> list[str]:
     return [t for t in (text or "").split() if t.strip()]
 
 
-def extract_whisper_words(
-    audio_file: str, language: str = "tr"
-) -> list[tuple[str, float, float]]:
-    """faster-whisper word_timestamps → [(word, start, end), ...]."""
-    if not audio_file:
-        return []
+def shared_whisper_model():
+    """Motor subtitle.create ile ayni faster-whisper singleton'i (yoksa yukler)."""
     try:
         from akifactory.engine.services import subtitle as sub_svc
     except ImportError:
-        return []
+        return None
 
     if getattr(sub_svc, "WhisperModel", None) is None:
-        return []
+        return None
 
-    # Model singleton (motor subtitle.create ile ayni)
     model = getattr(sub_svc, "model", None)
     if model is None:
         # create() model yukler; gecici SRT yazmadan sadece model kur
@@ -117,7 +112,19 @@ def extract_whisper_words(
             )
             sub_svc.model = model
         except Exception:
-            return []
+            return None
+    return model
+
+
+def extract_whisper_words(
+    audio_file: str, language: str = "tr"
+) -> list[tuple[str, float, float]]:
+    """faster-whisper word_timestamps → [(word, start, end), ...]."""
+    if not audio_file:
+        return []
+    model = shared_whisper_model()
+    if model is None:
+        return []
 
     lang = (language or "tr").strip().lower()
     if "-" in lang:

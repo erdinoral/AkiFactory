@@ -16,7 +16,8 @@ def wav_to_mp3(wav_path: str, mp3_path: str, voice_volume: float) -> bool:
         seg = AudioSegment.from_wav(wav_path)
         if voice_volume != 1.0:
             seg = seg + (20 * (voice_volume - 1.0))
-        seg.export(mp3_path, format="mp3")
+        # 24 kHz mono girdide pydub varsayilani 32 kb/s'e duser
+        seg.export(mp3_path, format="mp3", bitrate="192k")
         return True
     except Exception as e:
         logger.warning(f"pydub mp3 donusumu basarisiz: {e}")
@@ -37,7 +38,7 @@ def wav_to_mp3(wav_path: str, mp3_path: str, voice_volume: float) -> bool:
 
 
 def apply_voice_name_parse_patch() -> None:
-    """rvc:/chatterbox: seslerinde -Male/-Female kirpma — yanlis konusmaci onleme."""
+    """rvc:/chatterbox:/voicestudio: seslerinde -Male/-Female kirpma — yanlis konusmaci onleme."""
     try:
         from akifactory.engine.services import voice as v
     except ImportError:
@@ -48,7 +49,7 @@ def apply_voice_name_parse_patch() -> None:
 
     def _parse_voice_name_safe(name: str) -> str:
         n = (name or "").strip()
-        if n.startswith(("rvc:", "chatterbox:")):
+        if n.startswith(("rvc:", "chatterbox:", "voicestudio:")):
             return n
         return _orig(n)
 

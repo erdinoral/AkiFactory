@@ -285,7 +285,9 @@ def _patch_turkish_subtitle_timing() -> None:
         turkish = (video_language or "").strip().lower().startswith("tr")
         subtitle_path = os.path.join(utils.task_dir(task_id), "subtitle.srt")
         voice_name = str(getattr(params, "voice_name", "") or "").lower()
-        is_converted = voice_name.startswith("rvc:") or "chatterbox" in voice_name
+        is_converted = (
+            voice_name.startswith(("rvc:", "voicestudio:")) or "chatterbox" in voice_name
+        )
         provider = (
             (config.app.get("subtitle_provider") or "edge").strip().lower()
         )

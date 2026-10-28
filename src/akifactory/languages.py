@@ -16,7 +16,7 @@ DEFAULT_LANGUAGE = "tr"
 DEFAULT_TTS_ENGINE = "edge"
 
 # Arayuzde gosterilen ses motorlari
-UI_TTS_ENGINES: tuple[str, ...] = ("edge", "chatterbox", "rvc")
+UI_TTS_ENGINES: tuple[str, ...] = ("edge", "voicestudio", "chatterbox", "rvc")
 
 
 
@@ -163,6 +163,10 @@ def resolve_voice(
         if key.startswith("en"):
             return CHATTERBOX_VOICES["en"]
         return CHATTERBOX_VOICES.get(key, CHATTERBOX_VOICES["tr"])
+    if engine == "voicestudio":
+        from akifactory.voicestudio_bridge import engine_voice_name
+
+        return engine_voice_name()
     if engine == "rvc":
         from akifactory.rvc_registry import get_voice, engine_voice_name
 
@@ -221,6 +225,14 @@ def tts_validation_error(lang_id: str | None, tts_engine: str | None) -> str | N
                 "models/rvc/<SesAdi>/ klasorune .pth koyun."
             )
 
+    if engine == "voicestudio":
+        from akifactory import voicestudio_bridge as vs
+
+        if not vs.is_installed():
+            return "VoiceStudio kurulu degil. Pinokio'dan VoiceStudio-Pinokio uygulamasini kurun."
+        if not vs.selected_profile():
+            return "VoiceStudio sesi secilmedi. Ses motoru altindan bir klon ses secin."
+
     if engine == "rvc":
         from akifactory.rvc_tts import is_rvc_available
 
@@ -250,6 +262,15 @@ def chatterbox_model_ready() -> bool:
         return False
 
 
+def voicestudio_installed() -> bool:
+    try:
+        from akifactory.voicestudio_bridge import is_installed
+
+        return is_installed()
+    except Exception:
+        return False
+
+
 def tts_engines_for_ui(*, rvc_ok: bool | None = None) -> list[dict[str, object]]:
     if rvc_ok is None:
         from akifactory.rvc_tts import is_rvc_available
@@ -262,6 +283,14 @@ def tts_engines_for_ui(*, rvc_ok: bool | None = None) -> list[dict[str, object]]
             "label": "Edge TTS (bulut)",
             "available": True,
             "hint": "En dogal Turkce (Microsoft sinir agi). Internet gerekir.",
+        },
+        "voicestudio": {
+            "id": "voicestudio",
+            "label": "VoiceStudio klon ses (OmniVoice)",
+            "available": voicestudio_installed(),
+            "hint": voicestudio_installed()
+            and "VoiceStudio'daki klon sesle yerel uretim (TR/EN/DE/FR). Kapaliysa otomatik baslatilir."
+            or "Kurulu degil. Pinokio → VoiceStudio-Pinokio → Install",
         },
         "chatterbox": {
             "id": "chatterbox",
@@ -319,6 +348,8 @@ def resolve_tts_with_fallback(lang_id: str | None, tts_engine: str | None) -> tu
     if engine == "chatterbox" and err:
         if not tts_validation_error(lang_id, "edge"):
             return "edge", f"Chatterbox kullanilamadi ({err}). Edge TTS ile devam ediliyor."
+    if engine == "voicestudio" and err and not voicestudio_installed():
+        return "edge", f"VoiceStudio kullanilamadi ({err}). Edge TTS ile devam ediliyor."
     return engine, None
 
 

@@ -24,6 +24,12 @@ def prepare() -> None:
     except Exception:
         pass
     try:
+        from akifactory.voicestudio_bridge import apply_voicestudio_runtime_patch
+
+        apply_voicestudio_runtime_patch()
+    except Exception:
+        pass
+    try:
         from akifactory.rvc_util import apply_rvc_runtime_patch
 
         apply_rvc_runtime_patch()

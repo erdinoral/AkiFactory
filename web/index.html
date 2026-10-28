@@ -130,6 +130,24 @@
             </select>
           </label>
 
+          <div id="vs-voice-wrap" class="vs-voice-wrap hidden">
+            <label data-help="VoiceStudio (Pinokio) uygulamasindaki klon ses profili. Yeni ses icin VoiceStudio'da Voice Cloning ile profil olustur, sonra Sesleri yenile.">
+              <span>VoiceStudio klon sesi</span>
+              <select id="vs-voice">
+                <option value="">Yukleniyor…</option>
+              </select>
+            </label>
+            <label class="range-field" data-help="Klon ses referans kaydin temposunu da kopyalar. Yavas okunmus kayittan gelen ses icin artir (or. 1.20); her profil icin ayri saklanir. Konusma hizi bunun ustune uygulanir.">
+              <span>Ses temposu (bu profil): <strong id="vs-tempo-val">1.00</strong></span>
+              <input type="range" id="vs-tempo" min="0.8" max="1.4" step="0.05" value="1" />
+            </label>
+            <div class="btn-row" style="margin:0.3rem 0 0.4rem;flex-wrap:wrap;gap:0.4rem;">
+              <button type="button" id="btn-vs-refresh" class="btn-ghost btn-sm">Sesleri yenile</button>
+              <button type="button" id="btn-vs-start" class="btn-ghost btn-sm" data-help="VoiceStudio kapaliysa Pinokio uzerinden baslatir (ilk acilis 1-2 dk).">VoiceStudio'yu baslat</button>
+            </div>
+            <p id="vs-status" class="hint"></p>
+          </div>
+
           <label id="rvc-voice-wrap" class="rvc-voice-wrap hidden" data-help="RVC ses modeli — Edge Ahmet telaffuz uzerinden Erdin Oral gibi ozel sesler. models/rvc/ altina .pth koyun.">
             <span id="rvc-voice-label">RVC sesi (son katman)</span>
             <select id="rvc-voice">

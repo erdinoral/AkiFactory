@@ -5,6 +5,7 @@ const TTS_KEY = "aki_tts_engine";
 const PLATFORM_KEY = "aki_platform";
 const NICHE_KEY = "aki_niche";
 const RVC_VOICE_KEY = "aki_rvc_voice";
+let vsStatus = null;
 const OUTRO_KEY = "aki_outro";
 const EDITOR_KEY = "aki_editor_model";
 const WRITER_KEY = "aki_writer_model";
@@ -823,6 +824,10 @@ function updateTtsBadge() {
     badge.classList.remove("hidden");
   } else if (tts === "rvc") {
     badge.textContent = "RVC · Yerel ozel ses · GPU";
+    badge.className = "tts-badge local";
+    badge.classList.remove("hidden");
+  } else if (tts === "voicestudio") {
+    badge.textContent = "VoiceStudio · Yerel klon ses · GPU";
     badge.className = "tts-badge local";
     badge.classList.remove("hidden");
   } else {
@@ -1997,6 +2002,86 @@ function updateEdgeVoiceVisibility() {
     if (isRvc) void refreshRvcVoicesFromDisk();
   }
   if (isChatterbox) applyLocalRvcIndexHint();
+  const isVs = tts === "voicestudio";
+  $("vs-voice-wrap")?.classList.toggle("hidden", !isVs);
+  if (isVs && !vsStatus) void refreshVoiceStudio();
+}
+
+function vsVoiceLabel(id) {
+  const v = (vsStatus?.voices || []).find((x) => x.id === id);
+  return v?.label || id || "";
+}
+
+function renderVoiceStudioStatus() {
+  const sel = $("vs-voice");
+  const st = $("vs-status");
+  const voices = vsStatus?.voices || [];
+  if (sel) {
+    sel.innerHTML = voices.length
+      ? voices.map((v) => `<option value="${escapeHtml(v.id)}">${escapeHtml(v.label)}</option>`).join("")
+      : `<option value="">Ses profili yok</option>`;
+    if (vsStatus?.profile_id && voices.some((v) => v.id === vsStatus.profile_id)) {
+      sel.value = vsStatus.profile_id;
+    }
+    syncSelectUi(sel);
+  }
+  renderVoiceStudioTempo();
+  if (st) {
+    st.textContent = vsStatus?.online
+      ? `VoiceStudio acik · ${voices.length} klon ses`
+      : vsStatus?.detail || "VoiceStudio durumu bilinmiyor";
+  }
+  $("btn-vs-start")?.classList.toggle("hidden", !!vsStatus?.online || !vsStatus?.installed);
+}
+
+function renderVoiceStudioTempo() {
+  const t = Number(vsStatus?.tempos?.[vsStatus?.profile_id] ?? 1);
+  const val = Number.isFinite(t) ? t : 1;
+  if ($("vs-tempo")) $("vs-tempo").value = String(val);
+  if ($("vs-tempo-val")) $("vs-tempo-val").textContent = val.toFixed(2);
+}
+
+async function saveVoiceStudioProfile(profileId, tempo) {
+  if (!profileId) return;
+  const body = { profile_id: profileId };
+  if (tempo != null) body.tempo = tempo;
+  try {
+    const res = await fetch("/api/voicestudio/select", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = res.ok ? await res.json() : null;
+    if (vsStatus) {
+      vsStatus.profile_id = profileId;
+      if (data?.tempo != null) vsStatus.tempos = { ...(vsStatus.tempos || {}), [profileId]: data.tempo };
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function refreshVoiceStudio({ start = false } = {}) {
+  const st = $("vs-status");
+  if (st) st.textContent = start ? "VoiceStudio baslatiliyor… (1-2 dk)" : "VoiceStudio kontrol ediliyor…";
+  try {
+    vsStatus = await fetchApi(
+      start ? "/api/voicestudio/start" : "/api/voicestudio/status",
+      { method: start ? "POST" : "GET" },
+      "VoiceStudio durumu alinamadi"
+    );
+  } catch (e) {
+    vsStatus = { ...(vsStatus || {}), online: false, detail: String(e?.message || e) };
+  }
+  renderVoiceStudioStatus();
+  const voices = vsStatus?.voices || [];
+  if (voices.length && !voices.some((v) => v.id === vsStatus?.profile_id)) {
+    const first = voices.find((v) => !/^demo/i.test(v.id)) || voices[0];
+    await saveVoiceStudioProfile(first.id);
+    renderVoiceStudioStatus();
+  }
+  refreshLastVoiceSummary();
+  updateTtsHint((appConfig?.tts_engines || []).find((e) => e.id === "voicestudio"));
 }
 
 function applyLocalRvcIndexHint() {
@@ -2049,6 +2134,15 @@ function updateTtsHint(engine) {
       (voice
         ? `Chatterbox Multilingual → ${voice.label} RVC. Rakamlar (1940, %50) otomatik yaziya cevrilir.`
         : "Chatterbox → RVC icin asagidan model sec. Kurulum: python scripts/bootstrap.py --chatterbox");
+    return;
+  }
+  if (tts === "voicestudio") {
+    const label = vsVoiceLabel(vsStatus?.profile_id);
+    hint.textContent = dual
+      ? `Cift dil: ${label || "klon ses"} iki videoyu da kendi sesiyle okur (OmniVoice).`
+      : label
+        ? `${label} — VoiceStudio OmniVoice klon ses. Altyazi Whisper ile hizalanir.`
+        : engine?.hint || "VoiceStudio klon sesi secin.";
     return;
   }
   if (engine?.hint) hint.textContent = engine.hint;
@@ -2138,6 +2232,9 @@ function voiceDisplayLabel(v, langId) {
   if (v.tts_engine === "chatterbox") {
     const rvc = (appConfig?.rvc_voices || []).find((x) => x.id === v.rvc_voice);
     return rvc ? `Chatterbox → RVC — ${rvc.label}` : "Chatterbox → RVC";
+  }
+  if (v.tts_engine === "voicestudio") {
+    return `VoiceStudio — ${vsVoiceLabel(vsStatus?.profile_id) || "klon ses"}`;
   }
   const lang = (langId || $("production-lang")?.value || "tr").toLowerCase();
   const edgeList = appConfig?.edge_voices?.[lang] || [];
@@ -2286,6 +2383,12 @@ function getVoiceArchiveMeta(lang) {
       voice: rvc ? `Chatterbox → ${rvc.label}` : "Chatterbox → RVC",
     };
   }
+  if (v.tts_engine === "voicestudio") {
+    return {
+      tts_provider: "voicestudio",
+      voice: `VoiceStudio → ${vsVoiceLabel(vsStatus?.profile_id) || "klon ses"}`,
+    };
+  }
   const edgeList = appConfig?.edge_voices?.[lang] || [];
   const edge = edgeList.find((x) => x.id === v.edge_voice);
   return {
@@ -2406,6 +2509,20 @@ $("rvc-voice")?.addEventListener("change", () => {
   updateTtsHint((appConfig?.tts_engines || []).find((e) => e.id === "rvc"));
 });
 $("edge-voice")?.addEventListener("change", () => saveLastVoiceFromForm());
+$("vs-voice")?.addEventListener("change", async () => {
+  await saveVoiceStudioProfile($("vs-voice")?.value || "");
+  renderVoiceStudioTempo();
+  saveLastVoiceFromForm();
+  updateTtsHint((appConfig?.tts_engines || []).find((e) => e.id === "voicestudio"));
+});
+$("vs-tempo")?.addEventListener("input", () => {
+  if ($("vs-tempo-val")) $("vs-tempo-val").textContent = Number($("vs-tempo").value).toFixed(2);
+});
+$("vs-tempo")?.addEventListener("change", () => {
+  void saveVoiceStudioProfile($("vs-voice")?.value || "", Number($("vs-tempo")?.value || 1));
+});
+$("btn-vs-refresh")?.addEventListener("click", () => void refreshVoiceStudio());
+$("btn-vs-start")?.addEventListener("click", () => void refreshVoiceStudio({ start: true }));
 
 $("bgm-mode")?.addEventListener("change", updateBgmTrackVisibility);
 $("outro")?.addEventListener("change", () => {

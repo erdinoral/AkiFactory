@@ -203,6 +203,26 @@ def synthesize_voice_test(
         chain = f"chatterbox→rvc:{rvc_label or rvc_id}"
         spoken = cb_text
 
+    elif engine == "voicestudio":
+        from akifactory import voicestudio_bridge as vs
+        from akifactory.chatterbox_util import normalize_turkish_tts_text
+
+        profile_id = vs.selected_profile()
+        vs_text = normalize_turkish_tts_text(spoken) if lang_id == "tr" else spoken
+        vs.synthesize_wav(
+            vs_text,
+            base_wav,
+            profile_id=profile_id,
+            lang=lang_id,
+            voice_rate=voice_rate,
+            qa=False,
+        )
+        label = next(
+            (v.get("label") for v in vs.read_settings().get("voices") or [] if v.get("id") == profile_id),
+            profile_id,
+        )
+        chain = f"voicestudio:{label}"
+
     else:
         raise ValueError(f"Desteklenmeyen ses motoru: {engine}")
 

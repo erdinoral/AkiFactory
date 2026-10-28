@@ -281,6 +281,26 @@ def _is_weak_search_query(query: str) -> bool:
     return bool(tr_markers) and len(latin) <= 1
 
 
+_PROPER_CASE_SUFFIX_RE = re.compile(r"(?:nın|nin|nun|nün|dan|den|tan|ten|ya|ye|da|de|ta|te|a|e)$")
+
+
+def _core_topic_query(topic: str) -> str:
+    """Soru kalibindan cekirdek arama: "Neden Marsa Gitmek Zor ?" → "Mars"."""
+    out: list[str] = []
+    for word in re.findall(r"[\w']+", topic or ""):
+        low = word.lower().replace("'", "")
+        if low in _TOPIC_FILLER_WORDS or len(low) < 3:
+            continue
+        if "'" in word:
+            word = word.split("'", 1)[0]
+        elif word[:1].isupper():
+            stripped = _PROPER_CASE_SUFFIX_RE.sub("", word)
+            if len(stripped) >= 3:
+                word = stripped
+        out.append(word)
+    return " ".join(out)
+
+
 def _english_search_queries(
     topic: str,
     script: str,
@@ -307,6 +327,12 @@ def _english_search_queries(
         add(q)
     for q in extra_queries or []:
         add(q)
+    from akifactory.script_topic import is_question_form_topic
+
+    if is_question_form_topic(topic):
+        core = _core_topic_query(topic)
+        if core and core.lower() != topic.lower().rstrip(" ?"):
+            add(core)
     en_forms = _english_wiki_queries(topic)
     for q in en_forms:
         add(q)
@@ -409,6 +435,39 @@ def _snippet_blob(snippet: WebSnippet) -> str:
     return f"{snippet.title} {snippet.body}".lower()
 
 
+# Soru/dolgu kelimeleri konuyu tanimlamaz: "Neden Marsa Gitmek Zor" → yalnizca "marsa"
+# ayirt edici; yoksa "Neden gitmek zorundasın" adli Eurovision sarkisi eslesir
+_TOPIC_FILLER_WORDS = frozenset(
+    """
+    neden niçin nicin niye nasıl nasil hangi kim kimdir nedir ne nerede nereden nereye
+    zaman mı mi mu mü mıdır midir var yok için icin ile gibi kadar çok cok daha en bir bu şu
+    olan olarak oldu olur olmak olması olmasi gitmek gidilir gidemiyoruz yapmak yapılır etmek
+    zor zordur kolay mümkün mumkun gerçek gercek gerçekten gercekten aslında aslinda büyük buyuk
+    neler hakkında hakkinda bilinmeyen gerçekler gercekler sırrı sirri sır sir hikayesi
+    why how what who when where which the and for with hard difficult really
+    """.split()
+)
+
+
+_TR_FOLD = str.maketrans("çğıöşüâîûÇĞİIÖŞÜÂÎÛ", "cgiosuaiucgiiosuaiu")
+
+
+def _fold_words(text: str) -> list[str]:
+    """Turkce harf/ASCII farkini yok say (deasciifier "Marsa"yi "Marşa" yapabiliyor)."""
+    folded = unicodedata.normalize("NFKD", (text or "").translate(_TR_FOLD).lower())
+    return re.findall(r"\w+", "".join(c for c in folded if not unicodedata.combining(c)))
+
+
+_FOLDED_FILLER = frozenset(w for f in _TOPIC_FILLER_WORDS for w in _fold_words(f))
+
+
+def _topic_content_stems(topic: str) -> list[str]:
+    words = [w for w in _fold_words(topic) if len(w) > 2]
+    content = [w for w in words if w not in _FOLDED_FILLER] or words
+    # Turkce ek: "marsa" → "mars", "istanbulda" → "istanb"
+    return [w[: max(4, len(w) - 3)] if len(w) > 4 else w for w in dict.fromkeys(content)]
+
+
 def _filter_snippets_for_topic(snippets: list[WebSnippet], topic: str) -> list[WebSnippet]:
     """Konu disi kaynaklari (or. Tas Devri -> PKK, Ankara -> spor salonu) ele."""
     from akifactory.script_topic import (
@@ -422,8 +481,7 @@ def _filter_snippets_for_topic(snippets: list[WebSnippet], topic: str) -> list[W
         return snippets
 
     anchors = topic_anchor_phrases(topic)
-    topic_norm = normalize_text_for_match(topic or "")
-    topic_words = {w for w in topic_norm.split() if len(w) > 2}
+    stems = _topic_content_stems(topic)
 
     kept: list[WebSnippet] = []
     for sn in snippets:
@@ -433,10 +491,11 @@ def _filter_snippets_for_topic(snippets: list[WebSnippet], topic: str) -> list[W
         if anchors:
             if not any(a in blob for a in anchors):
                 continue
-        elif topic_words:
-            # Genel konu: en az bir anlamli kelime gecmeli (ankara, savas, ...)
-            hits = sum(1 for w in topic_words if w in blob)
-            need = 1 if len(topic_words) <= 2 else min(2, len(topic_words))
+        elif stems:
+            # Genel konu: ayirt edici kelimelerin koku gecmeli (ankara, savas, mars, ...)
+            tokens = set(_fold_words(_snippet_blob(sn)))
+            hits = sum(1 for st in stems if any(t.startswith(st) for t in tokens))
+            need = 1 if len(stems) <= 2 else min(2, len(stems))
             if hits < need:
                 continue
         if is_ancient_history_topic(topic) and has_off_topic_conflict_drift(blob, topic):
@@ -477,18 +536,21 @@ async def gather_fact_context(
         queries = [(topic or "").strip()]
 
     # 1) Once Wikipedia (asıl dogrulama kaynagi)
+    def relevant_wiki() -> list[WebSnippet]:
+        on_topic = _filter_snippets_for_topic(_dedupe_snippets(all_hits), topic)
+        return [s for s in on_topic if _is_wikipedia_snippet(s)]
+
     for query in queries:
         all_hits.extend(await _wikipedia_snippets(query, lang="tr", limit=2))
         all_hits.extend(await _wikipedia_snippets(query, lang="en", limit=2))
-        wiki_n = sum(1 for s in _dedupe_snippets(all_hits) if _is_wikipedia_snippet(s))
-        if wiki_n >= 3:
+        if len(relevant_wiki()) >= 3:
             break
 
-    wiki_hits = [s for s in _dedupe_snippets(all_hits) if _is_wikipedia_snippet(s)]
-    # 2) Wiki zayifsa DDG ile doldur
+    wiki_hits = relevant_wiki()
+    # 2) Wiki zayifsa (konu disi sonuclar sayilmaz) DDG ile doldur
     if len(wiki_hits) < 2:
         for query in queries:
-            if len(_dedupe_snippets(all_hits)) >= 6:
+            if len(_filter_snippets_for_topic(_dedupe_snippets(all_hits), topic)) >= 6:
                 break
             all_hits.extend(await _duckduckgo_snippets(query, limit=2))
 

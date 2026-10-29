@@ -326,11 +326,11 @@ def _fix_turkish_tts_words(text: str) -> str:
 
 # Edge TTS â/î/û okumaz veya yanlis okur — dogal alternatif kelime (TTS + altyazi + senaryo).
 _TTS_WORD_SUBSTITUTIONS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"(?i)\bhâlâ\b"), "henüz"),
-    (re.compile(r"(?i)\bhalâ\b"), "henüz"),
+    (re.compile(r"(?i)\bhâlâ\b"), "halen"),
+    (re.compile(r"(?i)\bhalâ\b"), "halen"),
     (
         re.compile(r"(?i)\bhala\b(?!\s*(?:ışığ|ışığı|isig|isigi))"),
-        "henüz",
+        "halen",
     ),
     (re.compile(r"(?i)\bhâl\b"), "durum"),
     (re.compile(r"(?i)\bkâr\b"), "kazanç"),

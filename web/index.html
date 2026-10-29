@@ -350,6 +350,35 @@
         <div id="single-topic-wrap">
           <textarea id="subject" rows="3" placeholder="Orn: Osmanli sarayindaki gizemli olaylar"></textarea>
           <datalist id="history-datalist"></datalist>
+
+          <div class="script-inline" id="script-inline">
+            <label for="script-preview-text" class="block-field-label" data-help="Bos birakirsan senaryo video uretilirken otomatik yazilir. Kendin yazabilir veya Senaryoyu uret ile yapay zekaya yazdirip duzenleyebilirsin; Videoyu uret bu metni kullanir.">
+              <span>Senaryo (istege bagli)</span>
+            </label>
+            <div class="script-editor-wrap" id="script-editor-wrap">
+              <textarea id="script-preview-text" rows="7" placeholder="Bos birak: video uretilirken otomatik yazilir. Ya da kendin yaz / Senaryoyu uret ile yazdir."></textarea>
+              <div id="script-loading" class="script-loading hidden" aria-live="polite" aria-busy="false">
+                <div class="script-loading-spinner" aria-hidden="true"></div>
+                <p id="script-loading-text" class="script-loading-text">Senaryo uretiliyor...</p>
+                <p id="script-loading-sub" class="script-loading-sub hint"></p>
+              </div>
+            </div>
+            <p id="script-meta" class="hint"></p>
+            <p id="script-hook-preview" class="hook-preview"></p>
+            <div class="btn-row form-action-row">
+              <button type="button" id="btn-editor-script" class="btn-ghost" data-help="Konudan yapay zekayla senaryo yazar (arastirma + dogrulama). Sonuc yukaridaki kutuya gelir; duzenleyip Videoyu uret ile kullanabilirsin.">Senaryoyu uret</button>
+              <button type="button" id="btn-script-questions" class="btn-ghost" data-help="Kutudaki senaryoya ozel 3-4 soru sorar; sectigin siklara gore senaryo duzenlenir.">Soru sor</button>
+              <button type="button" id="btn-clear-script" class="btn-ghost" data-help="Senaryo kutusunu bosaltir; video uretilirken senaryo yeniden otomatik yazilir.">Temizle</button>
+            </div>
+            <div id="script-questions-panel" class="script-questions-panel hidden">
+              <p id="script-questions-status" class="hint"></p>
+              <div id="script-questions-body"></div>
+              <div class="btn-row form-action-row">
+                <button type="button" id="btn-script-revise" class="btn-primary" disabled data-help="Sectigin cevaplari kutudaki senaryoya uygular; «Boyle kalsin» dedigin kisimlara dokunmaz.">Senaryoyu duzenle</button>
+                <button type="button" id="btn-script-questions-close" class="btn-ghost" data-help="Sorulari kapatir; senaryo degismez.">Kapat</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div id="batch-topics-wrap" class="batch-wrap hidden">
@@ -454,8 +483,7 @@
           </div>
         </details>
 
-        <div class="btn-row">
-          <button id="btn-preview-script" class="btn-ghost" type="button" data-help="Video uretmeden once LLM ile senaryo metnini onizle. Metni duzenleyip sonra uretebilirsin.">Senaryoyu goster</button>
+        <div class="btn-row form-action-row">
           <button id="btn-save-draft" class="btn-ghost" type="button" title="Tum ayarlari ve senaryoyu kaydet" data-help="Mevcut konu, ayarlar ve varsa senaryoyu taslak olarak kaydeder. Sonra ayni yerden devam edebilirsin.">Taslağı kaydet</button>
           <button id="btn-generate" class="btn-primary" type="button" title="" data-help="Tum adimlari baslatir: senaryo, ses, stok klip, altyazi ve montaj. Uretim birkaç dakika surebilir.">Videoyu uret</button>
         </div>
@@ -1677,29 +1705,6 @@
         <p class="footer-meta">Ollama · Pexels · Pixabay</p>
       </div>
     </footer>
-  </div>
-
-  <div id="script-modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-panel">
-      <h3>Senaryo</h3>
-      <p class="hint">Kendin yaz veya <strong>Editor ile uret</strong> ile yapay zekaya yazdir.</p>
-      <div class="script-editor-wrap" id="script-editor-wrap">
-        <textarea id="script-preview-text" rows="10" placeholder="Senaryo metnini buraya yaz..."></textarea>
-        <div id="script-loading" class="script-loading hidden" aria-live="polite" aria-busy="false">
-          <div class="script-loading-spinner" aria-hidden="true"></div>
-          <p id="script-loading-text" class="script-loading-text">Senaryo uretiliyor...</p>
-          <p id="script-loading-sub" class="script-loading-sub hint"></p>
-        </div>
-      </div>
-      <p id="script-meta" class="hint"></p>
-      <p id="script-hook-preview" class="hook-preview"></p>
-      <div class="modal-actions">
-        <button type="button" id="btn-editor-script" class="btn-ghost">Editor ile uret</button>
-        <button type="button" id="btn-use-script" class="btn-primary">Bu senaryoyla videoyu uret</button>
-        <button type="button" class="btn-ghost" data-close-modal>Kapat</button>
-      </div>
-    </div>
   </div>
 
   <div id="gallery-detail-modal" class="modal hidden gallery-detail-modal" role="dialog" aria-modal="true" aria-labelledby="gallery-detail-title">

@@ -4874,6 +4874,58 @@ details > summary .field-help {
   color: #fde047;
 }
 
+.hook-preview:empty {
+  display: none;
+}
+
+.script-inline {
+  margin-top: 0.75rem;
+}
+
+.script-inline .script-editor-wrap,
+.script-inline .script-editor-wrap textarea {
+  min-height: 150px;
+}
+
+.script-inline #script-meta:empty {
+  display: none;
+}
+
+.script-questions-panel {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.65rem;
+}
+
+.script-questions-panel #script-questions-status:empty {
+  display: none;
+}
+
+.script-questions-panel .think-opt,
+.script-questions-panel .think-opt span {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+  font-size: 0.88rem;
+}
+
+/* Senaryo + uretim satirlari: tum butonlar ayni olcu; ? rozeti icin sag bosluk */
+.form-action-row {
+  align-items: stretch;
+  margin-top: 0.75rem;
+}
+
+.form-action-row .btn-help-wrap > .btn-primary,
+.form-action-row .btn-help-wrap > .btn-ghost {
+  height: 46px;
+  margin-top: 0;
+  padding: 0 1.75rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .batch-task-lines li {
   display: grid;
   grid-template-columns: 1fr auto;

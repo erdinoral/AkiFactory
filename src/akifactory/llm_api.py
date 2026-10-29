@@ -99,6 +99,9 @@ STATIC_MODELS = {
 }
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
 _GEMINI_THINKING_RESERVE = 8192
+# Kotasi dolan model bu sure atlanir; her cagri 429 + bekleme ile vakit kaybetmesin
+_QUOTA_COOLDOWN_S = 1800.0
+_quota_until: dict[str, float] = {}
 
 # Sohbet disi modeller (embedding, ses, gorsel, moderasyon...) listeye girmez
 _NON_CHAT_RE = re.compile(
@@ -630,6 +633,15 @@ async def chat(
 
     text = ""
     tried: list[str] = []
+    now = time.time()
+    if _quota_until.get(m, 0.0) > now:
+        alt = next(
+            (x for x in models_for_provider(p) if x != m and _quota_until.get(x, 0.0) <= now),
+            "",
+        )
+        if alt:
+            tried.append(m)
+            m = alt
     for attempt in range(4):
         try:
             text = await _provider_chat(
@@ -647,6 +659,8 @@ async def chat(
             kind = _error_kind(e)
             _log(f"{p} chat hata ({m}, {kind}): {str(e) or type(e).__name__}")
             if kind == "model" or (kind == "quota" and attempt > 0):
+                if kind == "quota":
+                    _quota_until[m] = time.time() + _QUOTA_COOLDOWN_S
                 tried.append(m)
                 alt = next((x for x in models_for_provider(p) if x not in tried), "")
                 if not alt:

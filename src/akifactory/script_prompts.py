@@ -57,7 +57,7 @@ ZORUNLU KURALLAR:
 - "Anlatıcı", "ses", "video" gibi teknik ifadeler kullanma
 - Yapı etiketi ASLA yazma: "Hook", "Gövde", "Kapanış", "Giriş", "İlk cümle", "Son cümle" vb. yasak
 - Sadece düz cümleler yaz; etiket veya bölüm başlığı ekleme
-- "hâlâ" / "hala" kullanma (TTS yanlış okur); yerine: henüz, bugün bile, günümüzde, daha
+- "hâlâ" / "hala" kullanma (TTS yanlış okur); yerine: halen, bugün bile, günümüzde (olumsuz cümlede: henüz)
 - Şapkalı kelimelerden kaçın (lâkin, kâr, âdet, îmkan); ama, kazanç, genelde, olanak kullan
 - Sayılarda kesme işareti kullanma: 8i, 12den, 1922de yaz; 8'i, 12'den, 1922'de yasak (TTS bozar)
 - Yılları rakamla yaz (ör. 2600de, 1922de); ses motoru bunları yazıya çevirir — "iki bin" diye sen yazma

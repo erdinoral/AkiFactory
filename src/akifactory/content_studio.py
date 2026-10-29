@@ -1141,6 +1141,124 @@ Yanitinda SADECE iyilestirilmis tam senaryo metni olsun."""
     return enforce_spoken_script_limits((out or "").strip() or base)
 
 
+_QUESTION_OPTION_RE = re.compile(r"\bsoru(?:s[uı]yla|yla| sor| ile)", re.IGNORECASE)
+_KEEP_ANSWER_RE = re.compile(r"^\s*b[oö]yle kal(?:s[ıi]n|sin)", re.IGNORECASE)
+
+
+async def script_revision_questions(
+    script: str,
+    *,
+    topic: str,
+    niche_id: str = "genel",
+    model: str | None = None,
+) -> list[dict[str, Any]]:
+    """Hazir kisa senaryo icin duzenleme sorulari — her biri tek secimli (uzun video formati)."""
+    from akifactory.longform import _parse_plan_questions
+
+    base = (script or "").strip()
+    if len(base) < 40:
+        return []
+    niche = script_pr.NICHE_LABELS.get(niche_id, niche_id)
+    prompt = f"""Sen kisa video ({niche} nisi) senaryo editorusun. Asagidaki senaryo hazir; kullaniciya
+bu senaryoyu nasil duzenlemek istedigini soracaksin.
+
+KONU: {topic.strip()}
+
+SENARYO:
+{base}
+
+Gorev: BU SENARYOYA OZEL 3-4 duzenleme sorusu uret. Sorular senaryonun somut kisimlarina baksin
+(giris cumlesi, odaklanilan alt konu, eksik kalan veya fazla anlatilan kisim, ton, kapanis).
+- Her soruda kullanici YALNIZCA BIR secenek secer; 3-4 SOMUT, birbirinden farkli secenek ver
+- Seceneklerden biri mevcut hali koruyan secenek olabilir (or. «Böyle kalsın»)
+- Senaryo soru cumlesi ICEREMEZ: «soruyla baslasin», «izleyiciye soru soralim» gibi secenek YAZMA
+- Uydurma bilgi gerektiren veya konunun disina cikaran secenek YAZMA
+- Soru ve seceneklerde Turkce karakterleri MUTLAKA kullan (ç, ğ, ı, ö, ş, ü): «Böyle kalsın», «Giriş», «Kapanış»
+
+Yanitini SADECE su etiketli formatta yaz (baska aciklama yok):
+
+SORU: (soru metni)
+COKLU: hayir
+SECENEKLER:
+- (secenek 1)
+- (secenek 2)
+- (secenek 3)
+SORU: (sonraki soru)
+COKLU: hayir
+SECENEKLER:
+- ..."""
+    text = await ollama_chat(
+        [{"role": "user", "content": prompt}],
+        model=model,
+        think=False,
+        clean_script=False,
+        timeout=120.0,
+    )
+    out: list[dict[str, Any]] = []
+    for q in _parse_plan_questions(text or ""):
+        opts = [o for o in q["options"] if "?" not in o and not _QUESTION_OPTION_RE.search(o)]
+        if len(opts) >= 2:
+            out.append({**q, "options": opts})
+    return out[:4]
+
+
+async def revise_script_with_answers(
+    script: str,
+    *,
+    topic: str,
+    answers: str,
+    platform: str,
+    niche_id: str,
+    editor_model: str,
+) -> str:
+    """Kullanicinin soru cevaplarina gore mevcut senaryoyu duzenler (bastan yazmaz)."""
+    from akifactory.text_utils import enforce_spoken_script_limits
+
+    base = (script or "").strip()
+    note = (answers or "").strip()
+    if not base or not note:
+        return base
+    lines = [ln for ln in note.splitlines() if ln.strip()]
+    if all(_KEEP_ANSWER_RE.search(ln.rpartition("->")[2]) for ln in lines):
+        return base
+    plat = PLATFORM_LABELS.get(platform, platform)
+    niche = script_pr.NICHE_LABELS.get(niche_id, niche_id)
+    style = _editor_style_rules(kids=script_pr.is_kids_niche(niche_id))
+
+    prompt = f"""Sen kisa video senaryo editorusun. Kullanici senaryoyu okudu ve sorulara cevap verdi.
+Senaryoyu bu cevaplara gore DUZENLE — bastan yazma; cevaplarin istemedigi yerleri koru.
+
+{topic_prompt_block(topic, niche_id=niche_id)}
+PLATFORM: {plat}
+NIS: {niche}
+
+MEVCUT SENARYO:
+{base}
+
+KULLANICININ CEVAPLARI (oncelik bunlarda):
+{note}
+
+KURALLAR:
+- Her cevabi senaryoya yansit; «Boyle kalsin» denen kismi degistirme
+- Mevcut dogru bilgileri koru; yeni bilgi eklersen uydurma, emin olmadigini yazma
+- Senaryonun dilini koru (Turkce ise Turkce)
+- Stil:
+{style}
+
+{imla_prompt_block()}
+
+Yanitinda SADECE duzenlenmis tam senaryo metni olsun."""
+
+    out = await ollama_chat(
+        [{"role": "user", "content": prompt}],
+        model=editor_model,
+        think=False,
+        options={**EDITOR_CHAT_OPTIONS, "temperature": 0.5},
+        timeout=150.0,
+    )
+    return enforce_spoken_script_limits((out or "").strip() or base)
+
+
 async def fix_debunk_opening_if_needed(
     script: str,
     *,

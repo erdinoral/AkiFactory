@@ -419,6 +419,22 @@ class ScriptPreviewRequest(BaseModel):
     paragraph_number: int = Field(1, ge=1, le=5)
 
 
+class ScriptQuestionsRequest(BaseModel):
+    video_subject: str = Field(..., min_length=2, max_length=500)
+    script: str = Field(..., min_length=40, max_length=4000)
+    niche: str = "genel"
+    writer_model: str | None = None
+
+
+class ScriptReviseRequest(BaseModel):
+    video_subject: str = Field(..., min_length=2, max_length=500)
+    script: str = Field(..., min_length=40, max_length=4000)
+    answers: str = Field(..., min_length=2, max_length=3000)
+    platform: str = plat.DEFAULT_PLATFORM
+    niche: str = "genel"
+    writer_model: str | None = None
+
+
 class PublishReviewRequest(BaseModel):
     topic: str = Field(..., min_length=2, max_length=500)
     script: str = Field(..., min_length=10, max_length=4000)
@@ -2991,6 +3007,42 @@ def create_app() -> FastAPI:
         if features_util.is_enabled("topic_similarity_warn"):
             out["topic_warning"] = topic_mem.similarity_warning(topic, niche)
         return out
+
+    @app.post("/api/script/questions")
+    async def script_questions(body: ScriptQuestionsRequest):
+        ollama = await _require_llm(probe=True)
+        writer, _ = llm_prof.resolve_script_models(ollama.get("models") or [], body.writer_model, None)
+        questions = await studio_mod.script_revision_questions(
+            body.script,
+            topic=body.video_subject,
+            niche_id=body.niche,
+            model=writer,
+        )
+        if not questions:
+            raise HTTPException(502, "Sorular uretilemedi — tekrar dene.")
+        return {"questions": questions}
+
+    @app.post("/api/script/revise")
+    async def script_revise(body: ScriptReviseRequest):
+        ollama = await _require_llm(probe=True)
+        writer, editor = llm_prof.resolve_script_models(ollama.get("models") or [], body.writer_model, None)
+        script = await studio_mod.revise_script_with_answers(
+            body.script,
+            topic=body.video_subject,
+            answers=body.answers,
+            platform=body.platform,
+            niche_id=body.niche,
+            editor_model=editor or writer,
+        )
+        script = prepare_video_script(script, niche_id=body.niche)
+        if not script:
+            raise HTTPException(502, "Senaryo duzenlenemedi — tekrar dene.")
+        return {
+            "script": script,
+            "hook": script_hk.first_sentence(script),
+            "char_count": len(script),
+            "duration_est_sec": script_hk.estimate_duration_sec(script),
+        }
 
     @app.post("/api/publish/review")
     async def publish_review(body: PublishReviewRequest):

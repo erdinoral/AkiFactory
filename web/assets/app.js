@@ -781,7 +781,8 @@ function fillWriterModelSelect(writers, defWriter) {
       ? `<option value="">Bulut model listesi bos</option>`
       : `<option value="">Yazar modeli yok (ollama pull)</option>`;
   }
-  const savedWriter = localStorage.getItem(WRITER_KEY);
+  // Bulutta sunucu ayari esas: secim zaten /api/settings/llm'e yaziliyor, eski localStorage onu ezmesin
+  const savedWriter = cloud ? "" : localStorage.getItem(WRITER_KEY);
   const pick =
     savedWriter && list.some((m) => m.id === savedWriter && m.available !== false)
       ? savedWriter
@@ -10038,15 +10039,6 @@ function friendlyApiError(e) {
 
 let scriptLoadingTimer = null;
 
-function openScriptModal() {
-  $("script-modal")?.classList.remove("hidden");
-}
-
-function closeScriptModal() {
-  $("script-modal")?.classList.add("hidden");
-  setScriptLoading(false);
-}
-
 function setScriptLoading(loading, message = "") {
   const wrap = $("script-editor-wrap");
   const overlay = $("script-loading");
@@ -10055,7 +10047,7 @@ function setScriptLoading(loading, message = "") {
   const subEl = $("script-loading-sub");
   const dual = !!$("dual-llm")?.checked;
   const editorBtn = $("btn-editor-script");
-  const useBtn = $("btn-use-script");
+  const clearBtn = $("btn-clear-script");
 
   if (!loading && scriptLoadingTimer) {
     clearTimeout(scriptLoadingTimer);
@@ -10076,7 +10068,9 @@ function setScriptLoading(loading, message = "") {
       : "Ollama yanit bekleniyor...";
   }
   if (editorBtn) editorBtn.disabled = loading;
-  if (useBtn) useBtn.disabled = loading;
+  if (clearBtn) clearBtn.disabled = loading;
+  const questionsBtn = $("btn-script-questions");
+  if (questionsBtn) questionsBtn.disabled = loading;
 }
 
 function updateScriptMetaFromText(text) {
@@ -10097,6 +10091,7 @@ function renderScriptPreview(data) {
   const hook = $("script-hook-preview");
   const script = data.script || "";
   if (ta) ta.value = script;
+  pendingScript = script.trim();
   updateScriptMetaFromText(script);
   const meta = $("script-meta");
   if (meta && data.dual_llm && data.draft_script) {
@@ -10115,18 +10110,6 @@ function renderScriptPreview(data) {
         }`
       : "";
   }
-}
-
-function openScriptEditor() {
-  const ta = $("script-preview-text");
-  const hook = $("script-hook-preview");
-  if (ta) {
-    if (!ta.value.trim() && pendingScript) ta.value = pendingScript;
-    updateScriptMetaFromText(ta.value);
-  }
-  if (hook && !ta?.value.trim()) hook.innerHTML = "";
-  openScriptModal();
-  ta?.focus();
 }
 
 async function fetchScriptPreview() {
@@ -10155,19 +10138,199 @@ async function fetchScriptPreview() {
   return data;
 }
 
-$("btn-preview-script")?.addEventListener("click", () => {
-  openScriptEditor();
+$("script-preview-text")?.addEventListener("input", (e) => {
+  // Kutu her zaman gorunur: Videoyu uret eski senaryoyu degil kutudakini kullansin
+  pendingScript = e.target.value.trim();
+  updateScriptMetaFromText(e.target.value);
 });
 
-$("script-preview-text")?.addEventListener("input", (e) => {
-  updateScriptMetaFromText(e.target.value);
+$("btn-clear-script")?.addEventListener("click", () => {
+  pendingScript = "";
+  const ta = $("script-preview-text");
+  if (ta) ta.value = "";
+  const hook = $("script-hook-preview");
+  if (hook) hook.innerHTML = "";
+  updateScriptMetaFromText("");
+  closeScriptQuestions();
+  ta?.focus();
+});
+
+let scriptQuestions = [];
+let scriptAnswers = {};
+
+function closeScriptQuestions() {
+  scriptQuestions = [];
+  scriptAnswers = {};
+  $("script-questions-panel")?.classList.add("hidden");
+  const body = $("script-questions-body");
+  if (body) body.innerHTML = "";
+}
+
+function setScriptQuestionsStatus(msg, isError = false) {
+  const el = $("script-questions-status");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.classList.toggle("error", !!isError);
+}
+
+function composeScriptAnswers() {
+  return scriptQuestions
+    .map((q) => {
+      const a = (scriptAnswers[q.id] || "").trim();
+      return a ? `${q.question} -> ${a}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function updateScriptReviseButton() {
+  const btn = $("btn-script-revise");
+  if (btn) btn.disabled = !composeScriptAnswers();
+}
+
+function renderScriptQuestions() {
+  const body = $("script-questions-body");
+  if (!body) return;
+  body.innerHTML = scriptQuestions
+    .map((q) => {
+      const opts = (q.options || [])
+        .map(
+          (opt) => `<label class="think-opt">
+            <input type="radio" name="sq-${q.id}" value="${escapeHtml(opt)}" data-qid="${q.id}" />
+            <span>${escapeHtml(opt)}</span>
+          </label>`
+        )
+        .join("");
+      return `<div class="think-question" data-qid="${q.id}">
+        <p class="think-question-text">${escapeHtml(q.question)}</p>
+        <div class="think-opts">${opts}</div>
+        <input type="text" class="think-own" data-qid="${q.id}" placeholder="Ya da kendin yaz…" />
+      </div>`;
+    })
+    .join("");
+  body.querySelectorAll(".think-opt input").forEach((el) => {
+    el.addEventListener("change", () => {
+      if (!el.checked) return;
+      scriptAnswers[el.dataset.qid] = el.value;
+      const own = body.querySelector(`.think-own[data-qid="${el.dataset.qid}"]`);
+      if (own) own.value = "";
+      updateScriptReviseButton();
+    });
+  });
+  body.querySelectorAll(".think-own").forEach((el) => {
+    el.addEventListener("input", () => {
+      const qid = el.dataset.qid;
+      const own = el.value.trim();
+      if (own) {
+        scriptAnswers[qid] = own;
+        body.querySelectorAll(`input[name="sq-${qid}"]`).forEach((r) => {
+          r.checked = false;
+        });
+      } else {
+        delete scriptAnswers[qid];
+      }
+      updateScriptReviseButton();
+    });
+  });
+  updateScriptReviseButton();
+}
+
+$("btn-script-questions")?.addEventListener("click", async () => {
+  const subject = $("subject")?.value.trim();
+  const script = ($("script-preview-text")?.value || "").trim();
+  const panel = $("script-questions-panel");
+  if (!subject || subject.length < 2) {
+    setStatus("Once konu yaz.", true);
+    return;
+  }
+  if (script.length < 40) {
+    setStatus("Once senaryo uret veya kutuya senaryo yaz; sorular ona gore gelir.", true);
+    return;
+  }
+  const btn = $("btn-script-questions");
+  closeScriptQuestions();
+  panel?.classList.remove("hidden");
+  setScriptQuestionsStatus("Sorular hazirlaniyor…");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/script/questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        video_subject: subject,
+        script,
+        niche: $("niche")?.value || "genel",
+        writer_model: currentWriterModel() || null,
+      }),
+    });
+    const data = await readApiJson(res);
+    if (!res.ok) throw apiError(data, "Sorular uretilemedi");
+    scriptQuestions = data.questions || [];
+    renderScriptQuestions();
+    setScriptQuestionsStatus(
+      scriptQuestions.length
+        ? "Her soruda bir sik sec (veya kendin yaz), sonra «Senaryoyu duzenle»ye bas. Bos biraktigin soru atlanir."
+        : "Soru gelmedi — tekrar dene.",
+      !scriptQuestions.length
+    );
+    panel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  } catch (e) {
+    setScriptQuestionsStatus(e.message || "Sorular uretilemedi", true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+$("btn-script-questions-close")?.addEventListener("click", closeScriptQuestions);
+
+$("btn-script-revise")?.addEventListener("click", async () => {
+  const answers = composeScriptAnswers();
+  const subject = $("subject")?.value.trim();
+  const ta = $("script-preview-text");
+  const script = (ta?.value || "").trim();
+  if (!answers || !subject || script.length < 40) return;
+  const btn = $("btn-script-revise");
+  if (btn) btn.disabled = true;
+  setScriptLoading(true, "Senaryo cevaplarina gore duzenleniyor...");
+  const sub = $("script-loading-sub");
+  if (sub) sub.textContent = "Mevcut senaryo korunur, sadece sectiklerin uygulanir.";
+  setScriptQuestionsStatus("Senaryo duzenleniyor…");
+  try {
+    const res = await fetch("/api/script/revise", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        video_subject: subject,
+        script,
+        answers,
+        platform: $("platform")?.value || "tiktok",
+        niche: $("niche")?.value || "genel",
+        writer_model: currentWriterModel() || null,
+      }),
+    });
+    const data = await readApiJson(res);
+    if (!res.ok) throw apiError(data, "Senaryo duzenlenemedi");
+    const revised = data.script || "";
+    if (ta) ta.value = revised;
+    pendingScript = revised.trim();
+    updateScriptMetaFromText(revised);
+    const hook = $("script-hook-preview");
+    if (hook) hook.innerHTML = data.hook ? `<strong>Hook:</strong> ${escapeHtml(data.hook)}` : "";
+    closeScriptQuestions();
+    setStatus("Senaryo cevaplarina gore duzenlendi — tekrar Soru sor diyebilir veya videoyu uretebilirsin.");
+  } catch (e) {
+    setScriptQuestionsStatus(e.message || "Senaryo duzenlenemedi", true);
+    updateScriptReviseButton();
+  } finally {
+    setScriptLoading(false);
+  }
 });
 
 $("btn-editor-script")?.addEventListener("click", async () => {
   const btn = $("btn-editor-script");
   const dual = !!$("dual-llm")?.checked;
+  closeScriptQuestions();
   try {
-    openScriptModal();
     startPipeline("short", dual ? "scriptDual" : "scriptSimple", "Senaryo uretimi", subjectLabel());
     setPipelineStep("short", 0, dual ? "Yazar LLM calisiyor" : "Ollama senaryo yaziyor");
     setScriptLoading(true, dual ? "Yazar LLM calisiyor..." : "Senaryo uretiliyor...");
@@ -10210,17 +10373,6 @@ $("btn-editor-script")?.addEventListener("click", async () => {
 function subjectLabel() {
   return ($("subject")?.value?.trim() || "Konu").slice(0, 60);
 }
-
-$("btn-use-script")?.addEventListener("click", () => {
-  pendingScript = $("script-preview-text")?.value.trim() || "";
-  closeScriptModal();
-  if (!$("batch-mode")?.checked) onGenerate();
-  else setStatus("Seri modda onizleme senaryosu ilk konuya uygulanir.");
-});
-
-document.querySelectorAll("[data-close-modal]").forEach((el) => {
-  el.addEventListener("click", closeScriptModal);
-});
 
 $("btn-gallery-detail-close")?.addEventListener("click", closeGalleryDetailModal);
 $("btn-gallery-open-folder")?.addEventListener("click", async () => {

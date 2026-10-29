@@ -105,7 +105,7 @@ def main() -> int:
                     restart_window = now
                 restart_count += 1
                 _progress(
-                    f"Video motoru yeniden baslatiliyor ({restart_count})…",
+                    f"Restarting video engine ({restart_count})…",
                     72,
                 )
                 try:

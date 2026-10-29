@@ -262,7 +262,7 @@ def start_engine_api(
         if _engine_api_ready(host, selected):
             _emit_status(
                 on_status,
-                f"Eski motor yeniden baslatiliyor ({selected})…",
+                f"Restarting previous engine ({selected})…",
                 56,
             )
             _free_port(host, selected)
@@ -270,7 +270,7 @@ def start_engine_api(
             alt = pick_free_port(host, selected + 1)
             _emit_status(
                 on_status,
-                f"Port {selected} dolu (motor degil) — motor icin {alt} kullaniliyor.",
+                f"Port {selected} is in use by another app — using {alt} for the engine.",
                 56,
             )
             selected = alt
@@ -282,8 +282,8 @@ def start_engine_api(
     src = src_dir()
     if not (src / "akifactory").is_dir():
         raise FileNotFoundError(
-            f"akifactory kaynaklari bulunamadi: {src / 'akifactory'}\n"
-            "EXE paketi eksik — AkiFactory.bat veya AkiFactory.bat ile yeniden kurun."
+            f"akifactory sources not found: {src / 'akifactory'}\n"
+            "EXE package is incomplete — reinstall with AkiFactory.bat."
         )
     from akifactory.gpu import ffmpeg_env
 
@@ -329,7 +329,7 @@ def start_engine_api(
     pid_file.write_text(str(proc.pid), encoding="ascii")
     _emit_status(
         on_status,
-        f"Motor kutuphaneleri yukleniyor… (ilk acilis 1-2 dk)",
+        "Loading engine libraries… (first launch takes 1-2 min)",
         58,
     )
     api_timeout = 300.0
@@ -339,17 +339,17 @@ def start_engine_api(
         if proc.poll() is not None:
             tail = _read_log_tail(log_path)
             raise RuntimeError(
-                "Video motoru beklenmedik sekilde kapandi "
-                f"(cikis {proc.returncode}).\n"
-                f"Detay: {log_path}\n{tail or '(log bos)'}"
+                "The video engine exited unexpectedly "
+                f"(exit code {proc.returncode}).\n"
+                f"Details: {log_path}\n{tail or '(log is empty)'}"
             )
         if wait_for_api(host, selected, timeout=2.0):
-            _emit_status(on_status, f"Motor baglandi (:{selected}).", 80)
+            _emit_status(on_status, f"Engine connected (:{selected}).", 80)
             return proc, host, selected
         if time.time() - last_msg > 4:
             _emit_status(
                 on_status,
-                f"Motor baglantisi bekleniyor… (:{selected})",
+                f"Waiting for engine… (:{selected})",
                 None,
             )
             last_msg = time.time()
@@ -357,8 +357,8 @@ def start_engine_api(
     proc.terminate()
     tail = _read_log_tail(log_path)
     raise RuntimeError(
-        "Video motoru API zaman asimina ugradi.\n"
-        f"Detay: {log_path}\n{tail or '(log bos)'}"
+        "The video engine API timed out.\n"
+        f"Details: {log_path}\n{tail or '(log is empty)'}"
     )
 
 

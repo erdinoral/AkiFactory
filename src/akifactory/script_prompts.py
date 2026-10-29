@@ -665,10 +665,14 @@ async def generate_script_text(
                 "Notta «efsane / kanitlanamamis» yazsa bile sen «yoktu / kanit yok» diye BITIRME; sir perdesini anlat.\n"
             )
         user += (
-            "\n\nWEB ARASTIRMA NOTU (Wikipedia + DuckDuckGo — buna sadik kal, uydurma ekleme):\n"
+            "\n\nWEB ARASTIRMA NOTU (Wikipedia + DuckDuckGo — yardimci kaynak, uydurma ekleme):\n"
             f"{research}\n"
-            "Bu nottaki olgulari kendi konusma dilimizle, akici ve merak uyandiran sekilde anlat.\n"
-            "Notta olmayan ulke/sehir/kisi/tarih YAZMA; yanlis yil/isim varsa nottakini kullan.\n"
+            f"KONU ONCELIKLI: Senaryo YALNIZCA «{subj}» konusunu anlatsin. Nottan sadece bu konuya "
+            "dogrudan hizmet eden olgulari kullan; konu disi kalan yer/kisi/olay ve genel ansiklopedik "
+            "bilgileri ATLA. Not konuyla ilgisizse notu tamamen yok say.\n"
+            "Bu olgulari kendi konusma dilimizle, akici ve merak uyandiran sekilde anlat.\n"
+            "Konuya ait isim/yil/sayi verirken nottakini kullan; notta olmayan, emin olmadigin "
+            "ulke/sehir/kisi/tarih UYDURMA.\n"
             "Video basligi soru veya iddia olsa bile basligi DOGRULAMA/YANLISLAMA "
             "(Hayir/Evet, dogru/yanlis, «bu ifade gecerli/gecersiz», «gecersizdir» deme); "
             "nottaki olayi veya efsaneyi anlat.\n"

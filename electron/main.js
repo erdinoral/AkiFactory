@@ -135,9 +135,9 @@ function fixPyvenvCfg() {
     console.error("[pyvenv fix]", e);
     try {
       dialog.showErrorBox(
-        "AkiFactory — Python yolu",
-        "pyvenv.cfg guncellenemedi. Kurulum klasorune yazma izni yok olabilir.\n" +
-          "Cozum: uygulamayi kullanici klasorune kurun (Program Files degil) veya yonetici olarak acin.\n\n" +
+        "AkiFactory — Python path",
+        "Could not update pyvenv.cfg. The install folder may not be writable.\n" +
+          "Fix: install the app in your user folder (not Program Files) or run it as administrator.\n\n" +
           String(e && e.message ? e.message : e)
       );
     } catch (_) {
@@ -272,7 +272,7 @@ function sendSplashProgress(data) {
 function spawnBackendProcess() {
   const script = backendScript();
   if (!fs.existsSync(script)) {
-    throw new Error(`Backend script bulunamadi: ${script}`);
+    throw new Error(`Backend script not found: ${script}`);
   }
   fixPyvenvCfg();
   return spawn(pythonExe(), ["-u", script], {
@@ -335,14 +335,14 @@ function wireBackendProcess(proc, { onReady, onFail, allowRestart = false }) {
         dialog.showErrorBox(
           "AkiFactory",
           lastBackendError ||
-            "Arka plan motoru tekrar baslatilamadi. Pencereyi kapatip AkiFactory.bat ile acin."
+            "The background engine could not be restarted. Close the window and start AkiFactory again."
         );
         app.quit();
         return true;
       }
       backendAutoRestartCount += 1;
       settled = false;
-      console.warn(`[backend] Yeniden baslatiliyor (${backendAutoRestartCount}/${BACKEND_AUTO_RESTART_MAX})…`);
+      console.warn(`[backend] Restarting (${backendAutoRestartCount}/${BACKEND_AUTO_RESTART_MAX})…`);
       if (backendRestartTimer) clearTimeout(backendRestartTimer);
       backendRestartTimer = setTimeout(() => {
         backendRestartTimer = null;
@@ -513,7 +513,7 @@ function stopBackend() {
 }
 
 ipcMain.handle("save-video", async (_evt, url, defaultName) => {
-  if (!serverBase) return { ok: false, error: "Sunucu hazir degil" };
+  if (!serverBase) return { ok: false, error: "Server is not ready" };
   const name = defaultName || "akifactory.mp4";
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
     defaultPath: name,
@@ -540,7 +540,7 @@ ipcMain.handle("save-video", async (_evt, url, defaultName) => {
 });
 
 ipcMain.handle("open-assets-folder", async (_evt, section) => {
-  if (!serverBase) return { ok: false, error: "Sunucu hazir degil" };
+  if (!serverBase) return { ok: false, error: "Server is not ready" };
   const r = await postJson(`${serverBase}/api/settings/open-folder`, { section });
   if (r.status >= 400) {
     return { ok: false, error: r.data?.detail || "Klasor acilamadi" };
@@ -596,7 +596,7 @@ app.whenReady().then(async () => {
     }
   } catch (e) {
     if (splashWindow && !splashWindow.isDestroyed()) splashWindow.close();
-    dialog.showErrorBox("AkiFactory — Baslatilamadi", e.message || String(e));
+    dialog.showErrorBox("AkiFactory — Failed to start", e.message || String(e));
     stopBackend();
     app.quit();
   }

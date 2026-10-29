@@ -346,6 +346,18 @@ def _entry_size_mb(e: dict[str, Any], path: Path) -> float:
         return 0.0
 
 
+def video_download_name(e: dict[str, Any]) -> str:
+    """Kaydedilen dosya adi: "<baslik> - <kisa kimlik>.mp4" — her video ayri ad alir."""
+    base = str(e.get("title") or e.get("subject") or "AkiFactory")
+    base = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', " ", base)
+    base = re.sub(r"\s+", " ", base).strip()
+    if len(base) > 70:
+        base = base[:71].rsplit(" ", 1)[0]
+    base = base.rstrip(" .") or "AkiFactory"
+    eid = str(e.get("id") or "")[:6]
+    return f"{base} - {eid}.mp4" if eid else f"{base}.mp4"
+
+
 def _build_list_row(e: dict[str, Any], *, include_assets: bool = False) -> dict[str, Any] | None:
     fn = e.get("filename", "")
     path = gallery_dir() / fn
@@ -358,6 +370,7 @@ def _build_list_row(e: dict[str, Any], *, include_assets: bool = False) -> dict[
         row["size_mb"] = size_mb
         row["stream_url"] = f"/api/gallery/{eid}/stream"
         row["download_url"] = f"/api/gallery/{eid}/download"
+        row["download_name"] = video_download_name(e)
         thumb_fn = e.get("thumbnail") or ""
         if thumb_fn and (gallery_dir() / thumb_fn).is_file():
             row["thumbnail_url"] = f"/api/gallery/{eid}/thumbnail"
@@ -412,6 +425,7 @@ def _build_list_row(e: dict[str, Any], *, include_assets: bool = False) -> dict[
         "size_mb": size_mb,
         "stream_url": f"/api/gallery/{eid}/stream",
         "download_url": f"/api/gallery/{eid}/download",
+        "download_name": video_download_name(e),
         "thumbnail_url": f"/api/gallery/{eid}/thumbnail" if has_thumb else "",
         "has_thumbnail": has_thumb,
         "has_script": len(script.strip()) >= 10,

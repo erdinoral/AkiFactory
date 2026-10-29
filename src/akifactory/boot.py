@@ -239,53 +239,53 @@ def run_boot(root: Path, on_progress: ProgressFn | None = None) -> BootResult:
         from akifactory.engine_launcher import ensure_engine_present, pick_free_port, start_engine_api
         from akifactory.desktop import run_uvicorn_thread, wait_for_url
 
-        progress("Dosyalar kontrol ediliyor…", 5)
+        progress("Checking files…", 5)
         ensure_engine_present(root)
         if not (root / "web" / "index.html").is_file():
-            raise FileNotFoundError("web/index.html eksik")
+            raise FileNotFoundError("web/index.html is missing")
 
         if getattr(sys, "frozen", False):
             if not (root / "src" / "akifactory" / "__init__.py").is_file():
                 raise FileNotFoundError(
-                    "EXE paketi eksik: src/akifactory bulunamadi.\n"
-                    "AkiFactory.bat --portable ile yeniden kurun."
+                    "EXE package is incomplete: src/akifactory not found.\n"
+                    "Reinstall with AkiFactory.bat --portable."
                 )
 
-        progress("Python ortami hazirlaniyor…", 15)
+        progress("Preparing Python environment…", 15)
         if not _venv_python(root):
             raise FileNotFoundError(
-                ".venv bulunamadi — portable paket veya AkiFactory.bat ile kurulum gerekli."
+                ".venv not found — install with the portable package or AkiFactory.bat."
             )
 
-        progress("Yapilandirma uygulaniyor…", 28)
+        progress("Applying configuration…", 28)
         if not _run_apply_config(root):
-            raise RuntimeError("config.toml olusturulamadi.")
+            raise RuntimeError("Could not create config.toml.")
 
-        progress("Ollama baslatiliyor…", 34)
+        progress("Starting Ollama…", 34)
         try:
             from akifactory.first_run import try_start_ollama
 
             if try_start_ollama(wait_sec=12.0):
-                progress("Ollama servisi acildi.", 36)
+                progress("Ollama service started.", 36)
         except Exception:
             pass
 
-        progress("Ollama baglantisi deneniyor…", 38)
+        progress("Connecting to Ollama…", 38)
         try:
             from akifactory.ollama_util import ping_sync
 
             if ping_sync():
-                progress("Ollama hazir.", 45)
+                progress("Ollama ready.", 45)
             else:
                 warnings.append(
-                    "Ollama yanit vermiyor — senaryo icin ayri pencerede ollama serve calistirin."
+                    "Ollama is not responding — run ollama serve in a separate window for script writing."
                 )
-                progress("Ollama bekleniyor (opsiyonel)…", 45)
+                progress("Waiting for Ollama (optional)…", 45)
         except Exception:
-            warnings.append("Ollama kontrolu atlandi.")
-            progress("Ollama atlandi.", 45)
+            warnings.append("Ollama check skipped.")
+            progress("Ollama skipped.", 45)
 
-        progress("GPU profili ayarlaniyor…", 50)
+        progress("Setting up GPU profile…", 50)
         _run_sync_gpu(root)
 
         if _running_instance_alive(root):
@@ -293,8 +293,8 @@ def run_boot(root: Path, on_progress: ProgressFn | None = None) -> BootResult:
                 return BootResult(
                     ok=False,
                     error=(
-                        "AkiFactory zaten acik. Gorev cubugundaki AkiFactory penceresine "
-                        "tiklayin veya ikinci bir kopya acmayin."
+                        "AkiFactory is already running. Click the AkiFactory window in the "
+                        "taskbar instead of opening a second copy."
                     ),
                 )
             _log_boot_error(
@@ -313,11 +313,11 @@ def run_boot(root: Path, on_progress: ProgressFn | None = None) -> BootResult:
         gpu_info = gpu_profile_for_ui()
         if gpu_info.get("gpu_available"):
             progress(
-                f"GPU: {gpu_info.get('gpu_name') or 'NVIDIA'} — motor baslatiliyor…",
+                f"GPU: {gpu_info.get('gpu_name') or 'NVIDIA'} — starting engine…",
                 54,
             )
         else:
-            progress("CPU modu — motor baslatiliyor…", 54)
+            progress("CPU mode — starting engine…", 54)
 
         wait_started = time.time()
 
@@ -334,9 +334,9 @@ def run_boot(root: Path, on_progress: ProgressFn | None = None) -> BootResult:
             on_status=engine_status,
         )
         os.environ["AKI_ENGINE_API"] = f"http://{api_host}:{api_port}"
-        progress("Motor baglandi.", 82)
+        progress("Engine connected.", 82)
 
-        progress("Arayuz hazirlaniyor…", 88)
+        progress("Preparing interface…", 88)
         from akifactory.ui_app import create_app
 
         ui_port = pick_free_port(UI_HOST, UI_PORT_DEFAULT)
@@ -346,12 +346,12 @@ def run_boot(root: Path, on_progress: ProgressFn | None = None) -> BootResult:
         app = create_app()
         run_uvicorn_thread(app, UI_HOST, ui_port)
 
-        progress("Arayuz baslatiliyor…", 93)
+        progress("Starting interface…", 93)
         url = f"http://{UI_HOST}:{ui_port}"
         if not wait_for_url(url, timeout=90.0):
-            raise RuntimeError(f"Arayuz acilmadi: {url}")
+            raise RuntimeError(f"Interface did not start: {url}")
 
-        progress("Hazir — uygulama aciliyor…", 100)
+        progress("Ready — opening the app…", 100)
         return BootResult(
             ok=True,
             warnings=warnings,
@@ -361,7 +361,7 @@ def run_boot(root: Path, on_progress: ProgressFn | None = None) -> BootResult:
             engine_api=os.environ["AKI_ENGINE_API"],
         )
     except Exception as exc:
-        msg = str(exc) or "Baslangic basarisiz"
+        msg = str(exc) or "Startup failed"
         _log_boot_error(root, msg)
         return BootResult(
             ok=False,

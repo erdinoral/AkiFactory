@@ -107,7 +107,8 @@ async def generate_fact_skeleton(
     research_block = ""
     if research:
         research_block = (
-            f"\nARASTIRMA NOTU (bunlara sadik kal, celisen uydurma):\n"
+            f"\nARASTIRMA NOTU (konuya ait olgularda buna sadik kal; konu disi kisimlari ATLA, "
+            f"not konuyla ilgisizse yok say):\n"
             f"{research[:1800]}\n"
         )
 
@@ -117,10 +118,11 @@ async def generate_fact_skeleton(
         f"Niş: {label}\n"
         f"Anlatim odagi: {narrative or subj}\n"
         f"{research_block}\n"
-        "Gorev: Bu konu icin 4 veya 5 SOMUT olgu maddesi yaz.\n"
+        "Gorev: Bu konu icin 4 veya 5 SOMUT olgu maddesi yaz; her madde dogrudan konuya hizmet etsin.\n"
         'Tercihen JSON: {"bullets":["madde1","madde2","madde3","madde4"]}\n'
         "JSON olmazsa her madde tek satir, tire (-) ile baslasin.\n"
-        "Kapsam: kim/ne, ne zaman, nerede, ne oldu, sonuc (uygun olanlar).\n"
+        "Kapsam: kim/ne, ne zaman, nerede, ne oldu, sonuc (uygun olanlar); "
+        "konu «neden / nasil» sorusuysa maddeler o sorunun sebepleri / sureci olsun.\n"
         "Sadece bilinen veya yuksek ihtimal dogru bilgiler.\n"
         "Yanitta SADECE JSON veya madde listesi — baska metin yok.\n"
     )

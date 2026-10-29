@@ -2228,18 +2228,23 @@ def create_app() -> FastAPI:
         item = gal.get_item(entry_id)
         if not item:
             raise HTTPException(404, "Video bulunamadi")
-        return FileResponse(item["path"], media_type="video/mp4")
+        # inline + ad: oynaticinin kendi "Indir" menusu "stream" yerine bu adi kullanir
+        return FileResponse(
+            item["path"],
+            media_type="video/mp4",
+            filename=gal.video_download_name(item),
+            content_disposition_type="inline",
+        )
 
     @app.get("/api/gallery/{entry_id}/download")
     async def gallery_download(entry_id: str):
         item = gal.get_item(entry_id)
         if not item:
             raise HTTPException(404, "Video bulunamadi")
-        fname = _safe_filename(item.get("subject", "akifactory"))
         return FileResponse(
             item["path"],
             media_type="video/mp4",
-            filename=fname,
+            filename=gal.video_download_name(item),
         )
 
     @app.get("/api/gallery/{entry_id}/audio")

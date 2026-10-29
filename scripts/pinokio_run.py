@@ -32,7 +32,7 @@ def main():
     # Do not let Pinokio's Conda/base Python start the engine in that case.
     python = ROOT / ".venv" / "Scripts" / "python.exe"
     if not python.is_file():
-        print("AkiFactory Python ortami bulunamadi. Pinokio: Kur / Onar.", flush=True)
+        print("AkiFactory Python environment not found. In Pinokio, run Install / Repair.", flush=True)
         return 1
     if not os.path.samefile(sys.executable, python):
         env = dict(os.environ)
@@ -41,7 +41,7 @@ def main():
     url = existing_url()
     if url:
         print(f"AKIFACTORY_READY {url}", flush=True)
-        print("Mevcut uygulamaya baglanildi. Pinokio'yu durdurmak mevcut uygulamayi kapatmaz.", flush=True)
+        print("Connected to the running app. Stopping it in Pinokio does not close that app.", flush=True)
         while existing_url() == url:
             time.sleep(3)
         return 0

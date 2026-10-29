@@ -98,6 +98,7 @@ STATIC_MODELS = {
     "claude": CLAUDE_MODELS,
 }
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+_GEMINI_THINKING_RESERVE = 8192
 
 # Sohbet disi modeller (embedding, ses, gorsel, moderasyon...) listeye girmez
 _NON_CHAT_RE = re.compile(
@@ -827,9 +828,10 @@ async def _gemini_chat(
     if contents[0]["role"] != "user":
         contents.insert(0, {"role": "user", "parts": [{"text": "(devam)"}]})
 
+    # Gemini 3.x Flash dusunme token'larini maxOutputTokens'tan duser; pay yoksa metin kesilir
     gen_cfg: dict[str, Any] = {
         "temperature": temperature,
-        "maxOutputTokens": max(512, min(int(num_predict), 8192)),
+        "maxOutputTokens": max(512, min(int(num_predict), 8192)) + _GEMINI_THINKING_RESERVE,
     }
     if format_json:
         gen_cfg["responseMimeType"] = "application/json"

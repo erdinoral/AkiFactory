@@ -3106,7 +3106,7 @@ async function showGalleryItemInOutput(entryId, { autoplay = true } = {}) {
     const item = await readApiJson(r);
     const url = item?.stream_url || `/api/gallery/${encodeURIComponent(entryId)}/stream`;
     outputGalleryId = item?.id || entryId;
-    showVideo(url, videoFilenameFromSubject(item?.subject), item?.production_sec || 0, {
+    showVideo(url, item?.download_name || videoFilenameFromSubject(item?.subject), item?.production_sec || 0, {
       autoplay,
       label: galleryTitleText(item || {}),
     });
@@ -6348,7 +6348,7 @@ async function loadGallery(opts = {}) {
             <button type="button" class="btn-ghost btn-sm btn-details" data-gallery-detail="${item.id}">Detaylar</button>
             <button type="button" class="btn-ghost btn-sm" data-gallery-thumb="${item.id}">${item.has_thumbnail ? "Kapak" : "Kapak cek"}</button>
             <button type="button" class="btn-ghost btn-sm" data-analyze-video="${item.id}">Istatistik</button>
-            <button type="button" class="btn-ghost btn-sm" data-save-url="${escapeHtml(item.download_url)}" data-save-name="${escapeHtml(videoFilenameFromSubject(item.subject))}">Indir</button>
+            <button type="button" class="btn-ghost btn-sm" data-save-url="${escapeHtml(item.download_url)}" data-save-name="${escapeHtml(item.download_name || videoFilenameFromSubject(item.subject))}">Indir</button>
             <button type="button" class="danger btn-sm" data-delete="${item.id}">Sil</button>
           </div>
         </div>

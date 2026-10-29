@@ -46,7 +46,8 @@ def fact_pack_to_prompt_block(pack: dict[str, Any], *, topic: str = "") -> str:
         for it in items[:8]:
             lines.append(f"- {it}")
     lines.append(
-        "KURAL: Senaryodaki her somut iddia bu listeden gelsin; listede yoksa yazma."
+        "KURAL: Listeden yalnizca konuya dogrudan hizmet eden maddeleri kullan, konu disi maddeleri atla; "
+        "listede olmayan isim/tarih/sayi uydurma."
     )
     return "\n".join(lines)
 
@@ -157,8 +158,9 @@ async def build_fact_pack(
         f"ARASTIRMA NOTU:\n{brief[:2200]}\n\n"
         "Bu nottan JSON uret. Anahtarlar (dizi of string):\n"
         '{"entities":[],"dates":[],"places":[],"claims":[],"uncertain":[]}\n'
-        "claims: 3-6 somut olgu. uncertain: emin olunmayanlar.\n"
-        "Notta olmayan bilgi ekleme. Sadece JSON."
+        "claims: konuya dogrudan ilgili 3-6 somut olgu (konu soruysa cevabina hizmet edenler). "
+        "uncertain: emin olunmayanlar.\n"
+        "Konu disi bilgiyi alma; notta olmayan bilgi ekleme. Sadece JSON."
     )
     try:
         raw = await ollama_chat(

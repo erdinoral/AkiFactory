@@ -285,11 +285,18 @@ _PROPER_CASE_SUFFIX_RE = re.compile(r"(?:nın|nin|nun|nün|dan|den|tan|ten|ya|ye
 
 
 def _core_topic_query(topic: str) -> str:
-    """Soru kalibindan cekirdek arama: "Neden Marsa Gitmek Zor ?" → "Mars"."""
+    """Soru/dolgu kelimeli konudan cekirdek arama: "Neden Marsa Gitmek Zor" → "Mars".
+
+    Dolgu kelimesi yoksa bos doner; "Bermuda" gibi adlardan ek kirpmak arama bozar.
+    """
     out: list[str] = []
+    dropped = False
     for word in re.findall(r"[\w']+", topic or ""):
         low = word.lower().replace("'", "")
-        if low in _TOPIC_FILLER_WORDS or len(low) < 3:
+        if low in _TOPIC_FILLER_WORDS:
+            dropped = True
+            continue
+        if len(low) < 3:
             continue
         if "'" in word:
             word = word.split("'", 1)[0]
@@ -298,7 +305,7 @@ def _core_topic_query(topic: str) -> str:
             if len(stripped) >= 3:
                 word = stripped
         out.append(word)
-    return " ".join(out)
+    return " ".join(out) if dropped else ""
 
 
 def _english_search_queries(
@@ -323,16 +330,12 @@ def _english_search_queries(
         seen.add(key)
         out.append(q)
 
+    # Cekirdek en basta: ek sorgular 5'lik siniri doldurup onu disarida birakmasin
+    add(_core_topic_query(topic))
     for q in _atlas_extra_queries(topic):
         add(q)
     for q in extra_queries or []:
         add(q)
-    from akifactory.script_topic import is_question_form_topic
-
-    if is_question_form_topic(topic):
-        core = _core_topic_query(topic)
-        if core and core.lower() != topic.lower().rstrip(" ?"):
-            add(core)
     en_forms = _english_wiki_queries(topic)
     for q in en_forms:
         add(q)
@@ -380,7 +383,9 @@ def topic_research_extra_queries(topic: str, niche_id: str = "genel") -> list[st
         seen.add(key)
         out.append(q)
 
-    for q in _english_wiki_queries(topic)[:3]:
+    core = _core_topic_query(topic)
+    bases = ([core] if core else []) + _english_wiki_queries(topic)
+    for q in bases[:3]:
         add(q)
         add(f"{q} history")
         add(f"{q} discovery")
@@ -461,11 +466,26 @@ def _fold_words(text: str) -> list[str]:
 _FOLDED_FILLER = frozenset(w for f in _TOPIC_FILLER_WORDS for w in _fold_words(f))
 
 
-def _topic_content_stems(topic: str) -> list[str]:
+# Kokten sonra yalnizca Turkce ek gelebilir: mars → marsa, marstan, marsin; "marshall" degil
+_TR_SUFFIX_RE = re.compile(
+    r"(?:l[ae]r)?(?:y?[aeiu]|n?[iu]n|n?[dt][ae]n?|y?l[ae]|s[iu]|n[ae]|[iu]m|[iu]z|[dt][ae]ki)?"
+)
+
+
+def _topic_word_forms(topic: str) -> list[set[str]]:
+    """Ayirt edici her konu kelimesi icin olasi kokler: "marsa" → {"marsa", "mars"}."""
     words = [w for w in _fold_words(topic) if len(w) > 2]
     content = [w for w in words if w not in _FOLDED_FILLER] or words
-    # Turkce ek: "marsa" → "mars", "istanbulda" → "istanb"
-    return [w[: max(4, len(w) - 3)] if len(w) > 4 else w for w in dict.fromkeys(content)]
+    return [
+        {w} | {w[:i] for i in range(3, len(w)) if _TR_SUFFIX_RE.fullmatch(w[i:])}
+        for w in dict.fromkeys(content)
+    ]
+
+
+def _token_has_form(tokens: set[str], forms: set[str]) -> bool:
+    return any(
+        t.startswith(f) and _TR_SUFFIX_RE.fullmatch(t[len(f) :]) for t in tokens for f in forms
+    )
 
 
 def _filter_snippets_for_topic(snippets: list[WebSnippet], topic: str) -> list[WebSnippet]:
@@ -481,7 +501,7 @@ def _filter_snippets_for_topic(snippets: list[WebSnippet], topic: str) -> list[W
         return snippets
 
     anchors = topic_anchor_phrases(topic)
-    stems = _topic_content_stems(topic)
+    word_forms = _topic_word_forms(topic)
 
     kept: list[WebSnippet] = []
     for sn in snippets:
@@ -491,11 +511,11 @@ def _filter_snippets_for_topic(snippets: list[WebSnippet], topic: str) -> list[W
         if anchors:
             if not any(a in blob for a in anchors):
                 continue
-        elif stems:
-            # Genel konu: ayirt edici kelimelerin koku gecmeli (ankara, savas, mars, ...)
+        elif word_forms:
+            # Genel konu: ayirt edici kelimeler (ekli halleriyle) gecmeli (ankara, savas, mars, ...)
             tokens = set(_fold_words(_snippet_blob(sn)))
-            hits = sum(1 for st in stems if any(t.startswith(st) for t in tokens))
-            need = 1 if len(stems) <= 2 else min(2, len(stems))
+            hits = sum(1 for forms in word_forms if _token_has_form(tokens, forms))
+            need = 1 if len(word_forms) <= 2 else min(2, len(word_forms))
             if hits < need:
                 continue
         if is_ancient_history_topic(topic) and has_off_topic_conflict_drift(blob, topic):

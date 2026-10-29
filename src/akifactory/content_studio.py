@@ -1201,6 +1201,9 @@ def should_use_web_research(niche_id: str, web_verify: bool) -> bool:
     return bool(web_verify) and not script_pr.is_kids_niche(niche_id)
 
 
+_BRIEF_IRRELEVANT = "ALAKASIZ"
+
+
 async def _synthesize_research_brief(
     topic: str,
     raw_sources: str,
@@ -1240,6 +1243,9 @@ HAM KAYNAKLAR (Wikipedia + DuckDuckGo):
 
 KURALLAR:
 - Asagidaki SABLON formatinda yaz; bos alan icin "bilinmiyor" yaz
+- Yalnizca KONU'ya dogrudan ilgili bilgileri al (konu soruysa cevabina hizmet edenleri);
+  baska yer/kisi/olay, sayfa ayrimi, adin kokeni gibi konu disi bilgileri ALMA
+- Kaynaklarin hicbiri konuyla ilgili degilse sablon yerine yalnizca {_BRIEF_IRRELEVANT} yaz
 - Sadece kaynaklarda gecen somut bilgileri yaz
 - Celisen bilgi varsa en guvenilir olani sec veya BELIRSIZ'e yaz
 - Spekulasyon veya kaynakta olmayan bilgi EKLEME
@@ -1247,6 +1253,7 @@ KURALLAR:
 - Yanitinda SADECE sablon olsun
 {mystery_rules}
 SABLON:
+KONUYA CEVAP: (konu neden/nasil sorusuysa kaynaklara gore sebepler/surec — 2-4 madde; degilse bilinmiyor)
 KIM: (kisi/kurum / efsaneyi anlatan — yoksa bilinmiyor)
 NE ZAMAN: (tarih/yil — yoksa bilinmiyor)
 NEREDE: (yer/ulke/sehir — yoksa bilinmiyor)
@@ -1263,6 +1270,8 @@ DIGER:
     brief = (out or "").strip()
     if not brief:
         return raw[:1100]
+    if brief.upper().startswith(_BRIEF_IRRELEVANT):
+        return _BRIEF_IRRELEVANT
     return brief[:1200]
 
 
@@ -1322,6 +1331,9 @@ async def fetch_topic_research(
     brief = await _synthesize_research_brief(
         search_topic, raw, niche_id=niche_id, model=model, focus=focus
     )
+    if brief == _BRIEF_IRRELEVANT:
+        # Alakasiz kaynak senaryoyu konu disina cekiyor; yazar konuyu kendisi anlatsin
+        return "", 0
     out = brief or raw[:1200]
     try:
         from akifactory.fact_pack import build_fact_pack, fact_pack_to_prompt_block
@@ -1569,8 +1581,8 @@ WEB KAYNAKLARI (dogrulama icin):
 
 GOREV:
 1) Yanlis yil, yer, kisi, isim hatalarini web kaynaklarina gore DUZELT
-2) Eksik ama kritik bir hikaye detayi varsa KISA ekle (55 sn limiti icinde kal)
-3) Kaynakta net olmayan yeni ulke/kisi/tarih UYDURMA; abartma
+2) Eksik ama kritik bir hikaye detayi varsa KISA ekle (55 sn limiti icinde kal) — yalnizca konuya dogrudan aitse
+3) Kaynakta net olmayan yeni ulke/kisi/tarih UYDURMA; abartma; konu disi kaynak bilgisini senaryoya TASIMA
 4) Stil kurallari:
 {style}
 5) Nis odak:
@@ -1644,7 +1656,8 @@ Yapilacaklar:
 1) Arastirma notu ile celisen yanlis yil, yer, kisi, isim bilgilerini DUZELT
 2) Arastirma notunda OLMAYAN ulke/sehir/kisi/tarih UYDURMA — sil veya duzelt
 3) Notta net bilgi varken yanlis alternatif (or. baska ulke, baska kesif yili) KALDIR
-4) Eksik ama kritik hikaye detayi notta varsa KISA ekle
+4) Eksik ama kritik hikaye detayi notta varsa KISA ekle — yalnizca konuya dogrudan aitse
+4b) Senaryo konudan saptiysa (konu disi yer/kisi/olay anlatiyorsa) o kismi SIL ve konuya don; nottaki konu disi bilgiyi senaryoya TASIMA
 5) Stil kurallari:
 {style}
 6) Nis odak:

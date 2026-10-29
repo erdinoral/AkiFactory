@@ -121,6 +121,7 @@ TOPIC_NARRATIVE_RULES = """KONU SATIRI (onemli):
 - ASLA basliga cevap verme: «evet», «hayir», «dogru», «yanlis», «bu ifade gecerli/gecersiz», «gecersizdir», «gecersiz degildir», «gercekten meydana gelmis bir olaydir» YASAK.
 - Basligi okuyup dogru mu yanlis mi tartisma; izleyiciye olayi / efsaneyi anlat.
 - Yalnizca anlatim odagindaki konuyu anlat; baska tarih/catisma/siyasi olay EKLEME (or. konu Tas Devri ise PKK, 1984 catismasi yazma).
+- Baslik «neden / nasil» sorusuysa videonun omurgasi o sorunun sebepleri / sureci olsun; konunun genel ansiklopedik bilgisiyle (adinin kokeni, mitoloji, alakasiz yer/kisi) dolgu yapma.
 - Gizem/efsane konularinda (Atlantis, kayip sehir, lanet…): HIKAYE ANLATICISI ol — sir perdesini arala; «kanit yok / yoktu / kanitlanamamis» diye bitirme.
 - Dogru bilgiye yakin kal (kim anlatti, hangi yil, hangi yer, ne denildi); ama varligini mahkemede yargilama.
 - Ilk cumle somut tarih, yer, olgu veya kisi ile gir; soru isareti kullanma; meta yorum yazma."""
